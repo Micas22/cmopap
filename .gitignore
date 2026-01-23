@@ -31,16 +31,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-
-
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 
-
 /app/generated/prisma
 
 .vercel
-
