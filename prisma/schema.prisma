@@ -15,18 +15,18 @@ model User {
 
 model Animal {
     id       Int    @id @default(autoincrement())
-    nome String
-    chip String @unique
-    sex Int
+    nome String?
+    chip String? @unique
+    sex Int?
     image String?
-    raca String @db.Text
-    porte Int @db.SmallInt
-    altura Int
-    peso Float @db.DoublePrecision
-    esterelizacao Int @db.SmallInt
+    raca String? @db.Text
+    porte Int? @db.SmallInt
+    altura Int?
+    peso Float? @db.DoublePrecision
+    esterelizacao Int? @db.SmallInt
     observacoes String? @db.Text
-    data_ultima_vacina DateTime @map("data_ultima_vacina")
-    data_proxima_vacina DateTime @map("data_proxima_vacina")
+    data_ultima_vacina DateTime? @map("data_ultima_vacina")
+    data_proxima_vacina DateTime? @map("data_proxima_vacina")
 }
 
 model Stocks {
