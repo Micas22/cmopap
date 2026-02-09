@@ -14,13 +14,15 @@ const icon = L.icon({
   iconAnchor: [12, 41],
 });
 
-function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
+function LocationMarker({ onLocationSelect }: { onLocationSelect?: (lat: number, lng: number) => void }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
   const map = useMapEvents({
     click(e: L.LeafletMouseEvent) {
-      setPosition(e.latlng);
-      onLocationSelect(e.latlng.lat, e.latlng.lng);
-      map.flyTo(e.latlng, map.getZoom());
+      if (onLocationSelect) {
+        setPosition(e.latlng);
+        onLocationSelect(e.latlng.lat, e.latlng.lng);
+        map.flyTo(e.latlng, map.getZoom());
+      }
     },
   });
 
@@ -29,7 +31,7 @@ function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, 
   );
 }
 
-export default function ReportMap({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
+export default function ReportMap({ onLocationSelect }: { onLocationSelect?: (lat: number, lng: number) => void }) {
   return (
     <MapContainer
       center={[37.0286, -7.8411]} // Olhão, Portugal

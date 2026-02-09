@@ -19,4 +19,51 @@ model Animal {
     chip String @unique
     sex Int
     image String?
+    raca String @db.Text
+    porte Int @db.SmallInt
+    altura Int
+    peso Float @db.DoublePrecision
+    esterelizacao Int @db.SmallInt
+    observacoes String? @db.Text
+    data_ultima_vacina DateTime @map("data_ultima_vacina")
+    data_proxima_vacina DateTime @map("data_proxima_vacina")
+}
+
+model Stocks {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  quantidade Int
+  datas      DateTime @default(now())
+  utilizador Int
+}
+
+model StockHistory {
+  id         Int      @id @default(autoincrement())
+  stockId    Int
+  nome       String
+  quantidade Int
+  datas      DateTime @default(now())
+  utilizador Int
+}
+
+model Colonia {
+  id Int  @id @default(autoincrement())
+    nome       String
+    responsavel       String
+    contacto       String
+    num_animais Int
+    longitude Float
+    latitude Float
+}
+
+model Ocorrencia {
+  id Int @id @default(autoincrement())
+  titulo       String
+  descricao       String
+  morada      String
+  latitude    Float?
+  longitude   Float?
+  data_criacao DateTime
+  data_resolucao DateTime?
+  estado Int
 }

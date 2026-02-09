@@ -1,0 +1,2 @@
+- [x] Fix the `take` parameter in GET function of app/api/admin/ocorrencias/route.ts to validate limit before using Number(limit)
+- [x] Test the GET endpoint with valid and invalid limit values (server not running, but fix applied)

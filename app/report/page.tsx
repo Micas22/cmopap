@@ -42,6 +42,7 @@ export default function ReportPage() {
     address: "",
     type: "type1",
   });
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLocationSelect = async (lat: number, lng: number) => {
@@ -53,21 +54,59 @@ export default function ReportPage() {
       const data = await res.json();
       if (data && data.display_name) {
         setFormData((prev) => ({ ...prev, address: data.display_name }));
+      } else {
+        // If geocoding fails, require manual address input
+        alert("Não foi possível obter o endereço automaticamente. Por favor, insira o endereço manualmente.");
       }
     } catch (error) {
       console.error("Failed to fetch address", error);
+      alert("Erro ao obter endereço. Por favor, insira o endereço manualmente.");
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      alert("Report submitted successfully!");
+
+    // Map type to estado
+    const estadoMap: { [key: string]: number } = {
+      type1: 0, // Animal Perdido
+      type2: 1, // Animal Ferido
+      type3: 2, // Abandono
+      type4: 3, // Outro
+    };
+
+    const estado = estadoMap[formData.type] || 0;
+
+    try {
+      const response = await fetch("/api/admin/ocorrencias", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          titulo: formData.title,
+          descricao: formData.body,
+          morada: formData.address,
+          data_criacao: new Date().toISOString(),
+          data_resolucao: null,
+          estado,
+        }),
+      });
+
+      if (response.ok) {
+        alert("Report submitted successfully!");
+        setFormData({ title: "", body: "", address: "", type: "type1" });
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      alert("Failed to submit report. Please try again.");
+    } finally {
       setIsSubmitting(false);
-      setFormData({ title: "", body: "", address: "", type: "type1" });
-    }, 1000);
+    }
   };
 
   return (
@@ -243,14 +282,15 @@ export default function ReportPage() {
                     <label className="text-sm font-medium text-gray-700 ml-1">Morada</label>
                     <div className="relative">
                       <Input
-                        placeholder="Selecione no mapa para preencher automaticamente"
+                        placeholder="Clique no mapa para selecionar a localização"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="rounded-xl border-gray-200 focus:ring-orange-500 h-12 pr-10"
+                        readOnly
+                        className="rounded-xl border-gray-200 focus:ring-orange-500 h-12 pr-10 bg-gray-50"
+                        required
                       />
                       <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-500 w-5 h-5" />
                     </div>
-                    <p className="text-xs text-gray-400 ml-1">Clique no mapa para definir a localização exata.</p>
+                    <p className="text-xs text-gray-400 ml-1">Clique no mapa para definir a localização exata. O endereço será preenchido automaticamente.</p>
                   </div>
 
                   <Button

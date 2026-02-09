@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, PawPrint, Pencil, Trash2, Plus, ChevronDown, Check, Image as ImageIcon } from "lucide-react";
+import { Users, PawPrint, Pencil, Trash2, Plus, ChevronDown, Check, Image as ImageIcon, ChevronLeft, ChevronRight, Package, Users as UsersIcon, X, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -15,243 +15,15 @@ import { useRouter } from "next/navigation";
 
 
 export default function AdminDashboard() {
-  const [activeTable, setActiveTable] = useState<"users" | "animals">("users");
-  const [editItem, setEditItem] = useState<any>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
-
-const [users, setUsers] = useState<
-  { id: number; username: string; password: string; perms: number }[]
->([]);
-
-  const [animals, setAnimals] = useState<{ id: number; nome: string; chip: string; sex: number; image?: string }[]>([]);
-
-const fetchUsers = async () => {
-  const res = await fetch("/api/admin/users");
-  const data = await res.json();
-  setUsers(data);
-};
-
-const fetchAnimals = async () => {
-  try {
-    const res = await fetch("/api/admin/animals");
-    const data = await res.json();
-    setAnimals(Array.isArray(data) ? data : []);
-  } catch (error) {
-    console.error("Failed to fetch animals:", error);
-  }
-};
-
-useEffect(() => {
-  fetchUsers();
-  fetchAnimals();
-}, []);
-
-const handleSort = (key: string) => {
-  let direction: "asc" | "desc" = "asc";
-  if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
-    direction = "desc";
-  }
-  setSortConfig({ key, direction });
-};
-
-const sortData = <T extends Record<string, any>>(data: T[]) => {
-  if (!sortConfig) return data;
-  
-  return [...data].sort((a, b) => {
-    const valA = a[sortConfig.key];
-    const valB = b[sortConfig.key];
-
-    if (valA === valB) return 0;
-    if (valA === null || valA === undefined) return 1;
-    if (valB === null || valB === undefined) return -1;
-
-    if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-    if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
-};
-
-
-const handleSave = async () => {
-  if (!editItem) return;
-
-  try {
-    if (activeTable === "users") {
-      // Call the API to update the user
-      const res = await fetch("/api/admin/users", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editItem),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(`Failed to update user: ${error.error}`);
-        return;
-      }
-
-      const updatedUser = await res.json();
-
-      // Update local state
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-      );
-    } else {
-      const formData = new FormData();
-      Object.keys(editItem).forEach((key) => {
-        if (key !== "image" && key !== "deleteImage" && editItem[key] !== null && editItem[key] !== undefined) {
-          formData.append(key, String(editItem[key]));
-        }
-      });
-      if (editImageFile) {
-        formData.append("image", editImageFile);
-      }
-      if (editItem.deleteImage) {
-        formData.append("deleteImage", "true");
-      }
-
-      const res = await fetch("/api/admin/animals", {
-        method: "PUT",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(`Failed to update animal: ${error.error}`);
-        return;
-      }
-
-      const updatedAnimal = await res.json();
-
-      setAnimals((prev) =>
-        prev.map((a) => (a.id === updatedAnimal.id ? updatedAnimal : a))
-      );
-    }
-
-    setEditItem(null);
-    setEditImageFile(null);
-  } catch (err) {
-    console.error(err);
-    alert("An unexpected error occurred while saving.");
-  }
-};
-
-const handleRemoveImage = async () => {
-  if (!editItem) return;
-
-  try {
-    const formData = new FormData();
-    Object.keys(editItem).forEach((key) => {
-      if (key !== "image" && key !== "deleteImage" && editItem[key] !== null && editItem[key] !== undefined) {
-        formData.append(key, String(editItem[key]));
-      }
-    });
-    formData.append("deleteImage", "true");
-
-    const res = await fetch("/api/admin/animals", {
-      method: "PUT",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      alert(`Failed to remove image: ${error.error}`);
-      return;
-    }
-
-    const updatedAnimal = await res.json();
-
-    setAnimals((prev) => prev.map((a) => (a.id === updatedAnimal.id ? updatedAnimal : a)));
-    setEditItem(updatedAnimal);
-    setEditImageFile(null);
-  } catch (err) {
-    console.error(err);
-    alert("Error removing image");
-  }
-};
-
-{/* Create User Dialog */}
-const [createDialogOpen, setCreateDialogOpen] = useState(false);
-const [newUsername, setNewUsername] = useState("");
-const [newPassword, setNewPassword] = useState("");
-const [newPerms, setNewPerms] = useState(0);
-
-const handleCreateUser = async () => {
-  if (!newUsername || !newPassword) return alert("Fill all fields");
-
-  try {
-    const res = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: newUsername, password: newPassword }),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      alert(`Failed to create user: ${error.error}`);
-      return;
-    }
-
-    const newUser = await res.json();
-    setUsers((prev) => [...prev, newUser]);
-    setNewUsername("");
-    setNewPassword("");
-    setNewPerms(0);
-    setCreateDialogOpen(false);
-  } catch (err) {
-    console.error(err);
-    alert("Error creating user");
-  }
-};
-
-const [createAnimalDialogOpen, setCreateAnimalDialogOpen] = useState(false);
-const [newAnimalNome, setNewAnimalNome] = useState("");
-const [newAnimalChip, setNewAnimalChip] = useState("");
-const [newAnimalSex, setNewAnimalSex] = useState(1);
-const [createSexOpen, setCreateSexOpen] = useState(false);
-const [editSexOpen, setEditSexOpen] = useState(false);
-const [newAnimalImage, setNewAnimalImage] = useState<File | null>(null);
-const [editImageFile, setEditImageFile] = useState<File | null>(null);
-
-const handleCreateAnimal = async () => {
-  if (!newAnimalNome || !newAnimalChip) return alert("Fill all fields");
-
-  try {
-    const formData = new FormData();
-    formData.append("nome", newAnimalNome);
-    formData.append("chip", newAnimalChip);
-    formData.append("sex", newAnimalSex.toString());
-    if (newAnimalImage) {
-      formData.append("image", newAnimalImage);
-    }
-
-    const res = await fetch("/api/admin/animals", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      alert(`Failed to create animal: ${error.error}`);
-      return;
-    }
-
-    const newAnimal = await res.json();
-    setAnimals((prev) => [...prev, newAnimal]);
-    setNewAnimalNome("");
-    setNewAnimalChip("");
-    setNewAnimalSex(1);
-    setNewAnimalImage(null);
-    setCreateSexOpen(false);
-    setCreateAnimalDialogOpen(false);
-  } catch (err) {
-    console.error(err);
-    alert("Error creating animal");
-  }
-};
 
   const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [animals, setAnimals] = useState<any[]>([]);
+  const [vaccineNotifications, setVaccineNotifications] = useState<any[]>([]);
+  const [showVaccinePopup, setShowVaccinePopup] = useState(false);
+  const [ocorrenciaNotifications, setOcorrenciaNotifications] = useState<any[]>([]);
+  const [showOcorrenciaPopup, setShowOcorrenciaPopup] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -259,10 +31,105 @@ const handleCreateAnimal = async () => {
     if (storedUsername) setUsername(storedUsername);
   }, []);
 
+  useEffect(() => {
+    const fetchAnimalsAndCheckVaccines = async () => {
+      try {
+        const response = await fetch("/api/admin/animals");
+        if (response.ok) {
+          const data = await response.json();
+          setAnimals(data);
+
+          // Check for upcoming vaccines (today or within 3 days)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const upcomingVaccines = data.filter((animal: any) => {
+            if (!animal.data_proxima_vacina) return false;
+            const vaccineDate = new Date(animal.data_proxima_vacina);
+            vaccineDate.setHours(0, 0, 0, 0);
+
+            const diffTime = vaccineDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays >= 0 && diffDays <= 3;
+          });
+
+          if (upcomingVaccines.length > 0) {
+            setVaccineNotifications(upcomingVaccines);
+            setShowVaccinePopup(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch animals:", error);
+      }
+    };
+
+    const fetchOcorrenciasAndCheckUnresolved = async () => {
+      try {
+        const response = await fetch("/api/admin/ocorrencias");
+        if (response.ok) {
+          const data = await response.json();
+
+          // Check for unresolved ocorrencias
+          const unresolvedOcorrencias = data.filter((ocorrencia: any) => ocorrencia.data_resolucao == null);
+
+          if (unresolvedOcorrencias.length > 0) {
+            setOcorrenciaNotifications(unresolvedOcorrencias);
+            setShowOcorrenciaPopup(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch ocorrencias:", error);
+      }
+    };
+
+    fetchAnimalsAndCheckVaccines();
+    fetchOcorrenciasAndCheckUnresolved();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("username"); // remove stored username
     router.push("/login"); // redirect to login page
   };
+
+  const dashboardCards = [
+    {
+      title: "Animais",
+      icon: PawPrint,
+      href: "/dashanimais",
+      color: "from-orange-500 to-amber-500",
+      description: "Gerir animais"
+    },
+    {
+      title: "Stocks",
+      icon: Package,
+      href: "/dashstocks",
+      color: "from-orange-400 to-amber-400",
+      description: "Gerir stocks"
+    },
+    {
+      title: "Colónias",
+      icon: Users,
+      href: "/dashcolonias",
+      color: "from-amber-500 to-orange-500",
+      description: "Gerir colónias"
+    },
+    {
+      title: "Utilizadores",
+      icon: UsersIcon,
+      href: "/dashutilizadores",
+      color: "from-amber-600 to-orange-600",
+      description: "Gerir utilizadores"
+    },
+    {
+      title: "Ocorrências",
+      icon: FileText,
+      href: "/dashocorrencias",
+      color: "from-amber-400 to-orange-400",
+      description: "Gerir ocorrências",
+      span: true
+    }
+  ];
   
   return (
     <>
@@ -347,7 +214,7 @@ const handleCreateAnimal = async () => {
                       className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 origin-top-right"
                     >
                       <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center gtext-orange-600 font-bold text-lg">
                           {username ? username.charAt(0).toUpperCase() : "U"}
                         </div>
                         <div>
@@ -372,537 +239,358 @@ const handleCreateAnimal = async () => {
       </motion.div>
     </header>
 
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* SIDEBAR */}
-      <motion.aside 
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="w-72 bg-white border-r border-gray-100 p-6 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10"
-      >
-        <div className="flex items-center gap-3 mb-10 px-2">
-           <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 shadow-sm">
-             <Users className="w-6 h-6" />
-           </div>
-           <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Dashboard</h1>
-        </div>
+    {/* Main Content */}
+    <main className="min-h-screen bg-white p-6 relative">
+      <div className="max-w-7xl mx-auto">
+        {/* Greeting Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
+            Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">{username || "Utilizador"}</span>! 👋
+          </h1>
+          <p className="text-gray-600 text-lg">Bem-vindo ao painel de administração</p>
+        </motion.div>
 
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2">Menu</p>
-          <Button
-            onClick={() => { setActiveTable("users"); setSortConfig(null); }}
-            className={`w-full justify-start h-12 rounded-xl text-base font-medium transition-all duration-200 ${activeTable === "users" ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200" : "bg-transparent text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}
-            variant="ghost"
-          >
-            <Users className="mr-3 h-5 w-5" /> Utilizadores
-          </Button>
-          <Button
-            onClick={() => { setActiveTable("animals"); setSortConfig(null); }}
-            className={`w-full justify-start h-12 rounded-xl text-base font-medium transition-all duration-200 ${activeTable === "animals" ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200" : "bg-transparent text-gray-600 hover:bg-orange-50 hover:text-orange-600"}`}
-            variant="ghost"
-          >
-            <PawPrint className="mr-3 h-5 w-5" /> Animais
-          </Button>
-        </div>
-
-      </motion.aside>
-
-      {/* MAIN */}
-      <main className="flex-1 p-10">
-        <AnimatePresence mode="wait">
-          {activeTable === "users" && (
-            <motion.div key="users" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-              <Card className="rounded-3xl shadow-xl border-0 overflow-hidden bg-white/80 backdrop-blur-sm ring-1 ring-gray-100">
-                <CardHeader className="flex flex-row items-center justify-between px-8 py-6 border-b border-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                        <Users className="w-5 h-5" />
+        {/* Dashboard Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {dashboardCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <Link key={card.href} href={card.href}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.4 }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`relative h-64 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-150 overflow-hidden group cursor-pointer ${card.span ? "md:col-span-2" : ""}`}
+                >
+                  {/* Gradient Background */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity duration-150`} />
+                  
+                  {/* Content */}
+                  <div className="relative h-full p-8 flex flex-col justify-between">
+                    <div>
+                      <motion.div
+                        className={`w-16 h-16 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg`}
+                        whileHover={{ rotate: 5, scale: 1.1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      >
+                        <Icon className="w-8 h-8 text-white" />
+                      </motion.div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-2">{card.title}</h3>
+                      <p className="text-gray-600 text-sm">{card.description}</p>
                     </div>
-                    <CardTitle className="text-xl font-bold text-gray-800">Utilizadores</CardTitle>
+                    <div className="flex items-center text-orange-600 font-medium group-hover:translate-x-2 transition-transform duration-150">
+                      <span className="text-sm font-semibold">Abrir tabela</span>
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </div>
                   </div>
-
-  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-    {/* Only the button is wrapped in DialogTrigger */}
-    <DialogTrigger asChild>
-      <Button className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl shadow-lg shadow-gray-200 transition-all hover:scale-105 active:scale-95">
-        <Plus className="mr-2 h-4 w-4" /> Novo Utilizador
-      </Button>
-    </DialogTrigger>
-
-    {/* The modal itself */}
-    <DialogContent className="rounded-3xl space-y-4 p-6">
-      <DialogHeader>
-        <DialogTitle className="text-2xl font-bold text-gray-800">Criar novo utilizador</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-3 pt-2">
-      <Input
-        placeholder="Username"
-        value={newUsername}
-        onChange={(e) => setNewUsername(e.target.value)}
-        className="rounded-xl border-gray-200 focus:ring-orange-500"
-      />
-      <Input
-        placeholder="Password"
-        type="password"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        className="rounded-xl border-gray-200 focus:ring-orange-500"
-      />
-            <Input
-        placeholder="Perms"
-        type="number"
-        value={newPerms}
-        onChange={(e) => setNewPerms(Number(e.target.value))}
-        className="rounded-xl border-gray-200 focus:ring-orange-500"
-      />
-      <Button
-        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl h-11 shadow-md"
-        onClick={handleCreateUser}
-      >
-        Criar
-      </Button>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </DialogContent>
-  </Dialog>
-</CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="bg-gray-50/50">
-                      <TableRow className="hover:bg-transparent border-gray-100">
-<TableHead className="pl-8 h-12 font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("id")}>
-                          <div className="flex items-center gap-1">
-                            ID
-                            {sortConfig?.key === "id" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("username")}>
-                         <div className="flex items-center gap-1">
-                            Username
-                            {sortConfig?.key === "username" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("password")}>
-                          <div className="flex items-center gap-1">
-                            Password
-                            {sortConfig?.key === "password" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("perms")}>
-                          <div className="flex items-center gap-1">
-                            Perms
-                            {sortConfig?.key === "perms" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-right pr-8 font-semibold text-gray-500">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sortData(users).map((u) => (
-                        <TableRow key={u.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50">
-                          <TableCell className="pl-8 font-medium text-gray-600">#{u.id}</TableCell>
-                          <TableCell className="font-medium text-gray-900">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                                    {u.username.charAt(0).toUpperCase()}
-                                </div>
-                                {u.username}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-gray-400 font-mono text-xs">••••••••</TableCell>
-                                           <TableCell className="font-medium text-gray-900">{u.perms}</TableCell>
-                          <TableCell className="text-right pr-8 space-x-2">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => setEditItem({ ...u })}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-<Button
-  size="icon"
-  variant="ghost"
-  className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-  onClick={async () => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
 
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: u.id }),
-      });
+      {/* Sidebar Toggle Arrow */}
+      <motion.button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white p-5 rounded-l-3xl shadow-2xl hover:shadow-orange-500/50 transition-all duration-150 group"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <div className="relative">
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-white/30 rounded-full blur-xl group-hover:bg-white/50 transition-all duration-150"></div>
+          {/* Icon container */}
+          <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-2 group-hover:bg-white/30 transition-all duration-150">
+            {isSidebarOpen ? (
+              <ChevronRight className="w-7 h-7 relative z-10" />
+            ) : (
+              <ChevronLeft className="w-7 h-7 relative z-10" />
+            )}
+          </div>
+        </div>
+      </motion.button>
 
-      if (!res.ok) {
-        const error = await res.json();
-        alert(`Failed to delete user: ${error.error}`);
-        return;
-      }
-
-      setUsers((prev) => prev.filter((user) => user.id !== u.id));
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting user");
-    }
-  }}
->
-  <Trash2 className="h-4 w-4" />
-</Button>
-
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+      {/* Side Panel */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/20 z-30"
+            />
+            
+            {/* Side Panel */}
+            <motion.div
+              initial={{ x: 320 }}
+              animate={{ x: 0 }}
+              exit={{ x: 320 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-orange-50/30 shadow-2xl z-40 border-l-2 border-orange-200"
+            >
+              <div className="p-6 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-orange-100">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Painel Lateral</h2>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-2 hover:bg-orange-100 rounded-lg transition-colors group"
+                  >
+                    <ChevronRight className="w-5 h-5 text-orange-600 group-hover:text-orange-700" />
+                  </button>
+                </div>
+                {/* Side panel content - blank for now */}
+                <div className="text-gray-500 text-sm flex-1">
+                  {/* Content will be added later */}
+                </div>
+              </div>
             </motion.div>
-          )}
+          </>
+        )}
+      </AnimatePresence>
 
-          {activeTable === "animals" && (
-            <motion.div key="animals" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-              <Card className="rounded-3xl shadow-xl border-0 overflow-hidden bg-white/80 backdrop-blur-sm ring-1 ring-gray-100">
-                <CardHeader className="flex flex-row items-center justify-between px-8 py-6 border-b border-gray-50">
+      {/* Vaccine Notification Popup */}
+      <AnimatePresence>
+        {showVaccinePopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowVaccinePopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-50 text-green-600 rounded-lg">
-                        <PawPrint className="w-5 h-5" />
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <PawPrint className="w-6 h-6" />
                     </div>
-                    <CardTitle className="text-xl font-bold text-gray-800">Animais</CardTitle>
+                    <div>
+                      <h2 className="text-xl font-bold">Vacinas Pendentes</h2>
+                      <p className="text-orange-100 text-sm">Animais com vacinas próximas</p>
+                    </div>
                   </div>
-                  <Dialog open={createAnimalDialogOpen} onOpenChange={setCreateAnimalDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl shadow-lg shadow-gray-200 transition-all hover:scale-105 active:scale-95">
-                        <Plus className="mr-2 h-4 w-4" /> Novo Animal
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="rounded-3xl space-y-4 p-6">
-                      <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold text-gray-800">Criar novo animal</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-3 pt-2">
-                      <Input
-                        placeholder="Nome"
-                        value={newAnimalNome}
-                        onChange={(e) => setNewAnimalNome(e.target.value)}
-                        className="rounded-xl border-gray-200 focus:ring-orange-500"
-                      />
-                      <Input
-                        placeholder="Chip"
-                        value={newAnimalChip}
-                        onChange={(e) => setNewAnimalChip(e.target.value)}
-                        className="rounded-xl border-gray-200 focus:ring-orange-500"
-                      />
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500 ml-1">Foto (Opcional)</label>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setNewAnimalImage(e.target.files?.[0] || null)}
-                          className="rounded-xl border-gray-200 focus:ring-orange-500 file:text-orange-600 file:font-medium file:bg-orange-50 file:rounded-lg file:border-0 file:mr-4 file:px-4 file:py-1 hover:file:bg-orange-100 transition-all"
-                        />
-                      </div>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setCreateSexOpen(!createSexOpen)}
-                          className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all h-10"
-                        >
-                          <span className="text-gray-900">
-                            {newAnimalSex === 1 ? "Macho" : "Fêmea"}
-                          </span>
-                          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${createSexOpen ? "rotate-180" : ""}`} />
-                        </button>
-                        <AnimatePresence>
-                          {createSexOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                              transition={{ duration: 0.2 }}
-                              className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
-                            >
-                              {[
-                                { label: "Macho", value: 1 },
-                                { label: "Fêmea", value: 0 }
-                              ].map((option) => (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewAnimalSex(option.value);
-                                    setCreateSexOpen(false);
-                                  }}
-                                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                                >
-                                  {option.label}
-                                  {newAnimalSex === option.value && <Check className="w-4 h-4 text-orange-500" />}
-                                </button>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <Button
-                        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl h-11 shadow-md"
-                        onClick={handleCreateAnimal}
+                  <button
+                    onClick={() => setShowVaccinePopup(false)}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <div className="space-y-4">
+                  {vaccineNotifications.map((animal: any) => {
+                    const vaccineDate = new Date(animal.data_proxima_vacina);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffTime = vaccineDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    let urgencyColor = "bg-green-100 text-green-800";
+                    let urgencyText = "Próxima";
+
+                    if (diffDays === 0) {
+                      urgencyColor = "bg-red-100 text-red-800";
+                      urgencyText = "Hoje";
+                    } else if (diffDays === 1) {
+                      urgencyColor = "bg-orange-100 text-orange-800";
+                      urgencyText = "Amanhã";
+                    } else if (diffDays <= 3) {
+                      urgencyColor = "bg-yellow-100 text-yellow-800";
+                      urgencyText = `Em ${diffDays} dias`;
+                    }
+
+                    return (
+                      <motion.div
+                        key={animal.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                       >
-                        Criar
-                      </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="bg-gray-50/50">
-                      <TableRow className="hover:bg-transparent border-gray-100">
-                       <TableHead className="pl-8 h-12 font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("id")}>
-                          <div className="flex items-center gap-1">
-                            ID
-                            {sortConfig?.key === "id" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("image")}>
-                          <div className="flex items-center gap-1">
-                            Foto
-                            {sortConfig?.key === "image" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("nome")}>
-                          <div className="flex items-center gap-1">
-                            Nome
-                            {sortConfig?.key === "nome" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("chip")}>
-                          <div className="flex items-center gap-1">
-                            Chip
-                            {sortConfig?.key === "chip" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("sex")}>
-                          <div className="flex items-center gap-1">
-                            Sexo
-                            {sortConfig?.key === "sex" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
-                          </div>
-                       </TableHead>
-                        <TableHead className="text-right pr-8 font-semibold text-gray-500">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sortData(animals).map((a) => (
-                        <TableRow key={a.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50">
-                          <TableCell className="pl-8 font-medium text-gray-600">#{a.id}</TableCell>
-                          <TableCell>
-                            {a.image ? (
-                              <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={a.image} alt={a.nome} className="w-full h-full object-cover" />
-                              </div>
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                                <ImageIcon className="w-5 h-5" />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-medium text-gray-900">{a.nome}</TableCell>
-                          <TableCell className="text-gray-500 font-mono">{a.chip}</TableCell>
-                          <TableCell className="text-gray-500">{a.sex === 1 ? "Macho" : "Fêmea"}</TableCell>
-                          <TableCell className="text-right pr-8 space-x-2">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => setEditItem({ ...a })}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              onClick={async () => {
-                                if (!confirm("Are you sure you want to delete this animal?")) return;
-
-                                try {
-                                  const res = await fetch("/api/admin/animals", {
-                                    method: "DELETE",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ id: a.id }),
-                                  });
-
-                                  if (!res.ok) {
-                                    const error = await res.json();
-                                    alert(`Failed to delete animal: ${error.error}`);
-                                    return;
-                                  }
-
-                                  setAnimals((prev) => prev.filter((animal) => animal.id !== a.id));
-                                } catch (err) {
-                                  console.error(err);
-                                  alert("Error deleting animal");
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-<Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-  <DialogTrigger asChild>
-
-  </DialogTrigger>
-
-  <DialogContent className="rounded-2xl space-y-4">
-    <DialogHeader>
-      <DialogTitle className="text-orange-500">Criar novo utilizador</DialogTitle>
-    </DialogHeader>
-    <Input
-      placeholder="Username"
-      value={newUsername}
-      onChange={(e) => setNewUsername(e.target.value)}
-    />
-    <Input
-      placeholder="Password"
-      type="password"
-      value={newPassword}
-      onChange={(e) => setNewPassword(e.target.value)}
-    />
-        <Input
-      placeholder="Perms"
-      type="number"
-             min={0}
-        max={1}
-      value={newPerms}
-      onChange={(e) => {
-          const val = Number(e.target.value);
-          if (val === 0 || val === 1) setNewPerms(val);
-        }}
-    />
-    <Button
-      className="w-full bg-orange-500 hover:bg-orange-600"
-      onClick={handleCreateUser}
-    >
-      Confirmar
-    </Button>
-  </DialogContent>
-</Dialog>
-
-      {/* EDIT MODAL */}
-      <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) setEditItem(null); setEditSexOpen(false); setEditImageFile(null); }}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-orange-500">Editar Utilizador</DialogTitle>
-          </DialogHeader>
-
-          {editItem && (
-            <div className="space-y-4">
-              {Object.keys(editItem).map((key) => {
-                if (key === "id" || key === "deleteImage") return null;
-                if (key === "image") {
-                  return (
-                    <div key={key} className="space-y-2">
-                      <label className="text-sm font-medium text-gray-500">Foto</label>
-                      {editItem[key] && (
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                            <img src={editItem[key]} alt="Preview" className="w-full h-full object-cover" />
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={handleRemoveImage}
-                            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 shadow-sm transition-all hover:scale-105 active:scale-95 h-10 px-4 rounded-xl font-medium"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remover
-                          </Button>
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
+                          <img
+                            src={animal.image || "/placeholder.png"}
+                            alt={animal.nome}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                      )}
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setEditImageFile(e.target.files?.[0] || null)}
-                        className="rounded-xl border-gray-200 focus:ring-orange-500 file:text-orange-600 file:font-medium file:bg-orange-50 file:rounded-lg file:border-0 file:mr-4 file:px-4 file:py-1 hover:file:bg-orange-100 transition-all"
-                      />
-                    </div>
-                  );
-                }
-                if (key === "sex") {
-                  return (
-                    <div key={key} className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setEditSexOpen(!editSexOpen)}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all h-10"
-                      >
-                        <span className="text-gray-900">
-                          {editItem[key] === 1 ? "Macho" : "Fêmea"}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${editSexOpen ? "rotate-180" : ""}`} />
-                      </button>
-                      <AnimatePresence>
-                        {editSexOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 truncate">{animal.nome}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${urgencyColor}`}>
+                              {urgencyText}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">Chip: {animal.chip}</p>
+                          <p className="text-sm text-gray-500">
+                            Data da vacina: {vaccineDate.toLocaleDateString('pt-PT')}
+                          </p>
+                        </div>
+
+                        <Link href="/dashanimais">
+                          <Button
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
                           >
-                            {[
-                              { label: "Macho", value: 1 },
-                              { label: "Fêmea", value: 0 }
-                            ].map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                  setEditItem({ ...editItem, [key]: option.value });
-                                  setEditSexOpen(false);
-                                }}
-                                className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                              >
-                                {option.label}
-                                {editItem[key] === option.value && <Check className="w-4 h-4 text-orange-500" />}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                            Ver Detalhes
+                          </Button>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {vaccineNotifications.length === 0 && (
+                  <div className="text-center py-8">
+                    <PawPrint className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">Nenhuma vacina pendente</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t border-gray-200">
+                <Button
+                  onClick={() => setShowVaccinePopup(false)}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl"
+                >
+                  Fechar
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Ocorrencia Notification Popup */}
+      <AnimatePresence>
+        {showOcorrenciaPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowOcorrenciaPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-red-500 to-orange-500 p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <FileText className="w-6 h-6" />
                     </div>
-                  );
-                }
-                                if (key === "perms") {
-                  return (
-                    <Input
-                     key={key}
-                      type="number"
-                      min={0}
-                     max={1}
-                      value={editItem[key]}
-                     onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (val === 0 || val === 1) setEditItem({ ...editItem, [key]: val });
-                     }}
-                     placeholder={key}
-                    />
-                  );
-                }
-                return (
-                  <Input
-                    key={key}
-                    value={editItem[key]}
-                    onChange={(e) => setEditItem({ ...editItem, [key]: e.target.value })}
-                    placeholder={key}
-                  />
-                );
-              })}
-              <Button onClick={handleSave} className="w-full bg-orange-500 hover:bg-orange-600">
-                Salvar
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">Ocorrências Não Resolvidas</h2>
+                      <p className="text-red-100 text-sm">Ocorrências pendentes de resolução</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowOcorrenciaPopup(false)}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <div className="space-y-4">
+                  {ocorrenciaNotifications.map((ocorrencia: any) => {
+                    const getEstadoText = (estado: number) => {
+                      const estados = ["Animal Perdido", "Animal Ferido", "Abandono", "Outro"];
+                      return estados[estado] || "Desconhecido";
+                    };
+
+                    const getEstadoColor = (estado: number) => {
+                      const colors = ["bg-blue-100 text-blue-800", "bg-red-100 text-red-800", "bg-yellow-100 text-yellow-800", "bg-gray-100 text-gray-800"];
+                      return colors[estado] || "bg-gray-100 text-gray-800";
+                    };
+
+                    return (
+                      <motion.div
+                        key={ocorrencia.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-6 h-6 text-red-600" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-gray-900 truncate">{ocorrencia.titulo}</h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(ocorrencia.estado)}`}>
+                              {getEstadoText(ocorrencia.estado)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{ocorrencia.descricao}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Morada: {ocorrencia.morada}</span>
+                            <span>Data: {new Date(ocorrencia.data_criacao).toLocaleDateString('pt-PT')}</span>
+                          </div>
+                        </div>
+
+                        <Link href="/dashocorrencias">
+                          <Button
+                            size="sm"
+                            className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
+                          >
+                            Ver Detalhes
+                          </Button>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {ocorrenciaNotifications.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">Nenhuma ocorrência não resolvida</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t border-gray-200">
+                <Button
+                  onClick={() => setShowOcorrenciaPopup(false)}
+                  className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-xl"
+                >
+                  Fechar
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
+
     </>
   );
 }
