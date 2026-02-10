@@ -8,6 +8,8 @@ export async function GET() {
         username: true,
         password: true, // ⚠️ Only send this if necessary
         perms: true,
+        vaccine_notifications: true,
+        report_notifications: true,
       },
     });
 
@@ -24,7 +26,7 @@ export async function GET() {
 // CREATE a new user
 export async function POST(req: Request) {
   try {
-    const { username, password, perms } = await req.json();
+    const { username, password, perms, vaccine_notifications, report_notifications } = await req.json();
 
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
@@ -32,8 +34,8 @@ export async function POST(req: Request) {
     }
 
     const newUser = await prisma.user.create({
-      data: { username, password, perms: perms ?? 0 },
-      select: { id: true, username: true, password: true, perms: true },
+      data: { username, password, perms: perms ?? 0, vaccine_notifications: vaccine_notifications ?? true, report_notifications: report_notifications ?? true },
+      select: { id: true, username: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
     });
 
     return new Response(JSON.stringify(newUser), { status: 201 });
@@ -46,12 +48,12 @@ export async function POST(req: Request) {
 // EDIT / UPDATE a user
 export async function PUT(req: Request) {
   try {
-    const { id, username, password, perms } = await req.json();
+    const { id, username, password, perms, vaccine_notifications, report_notifications } = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { username, password, perms },
-      select: { id: true, username: true, password: true, perms: true },
+      data: { username, password, perms, vaccine_notifications, report_notifications },
+      select: { id: true, username: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
     });
 
     return new Response(JSON.stringify(updatedUser), { status: 200 });

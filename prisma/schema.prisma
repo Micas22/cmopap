@@ -11,6 +11,8 @@ model User {
   username String @unique
   password String
   perms Int
+  vaccine_notifications Boolean @default(true)
+  report_notifications Boolean @default(true)
 }
 
 model Animal {

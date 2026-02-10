@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, PawPrint, Pencil, Trash2, Plus, ChevronDown, Check, Image as ImageIcon, ChevronLeft, ChevronRight, Package, Users as UsersIcon, X, FileText } from "lucide-react";
+import { Users, PawPrint, Pencil, Trash2, Plus, ChevronDown, Check, Image as ImageIcon, ChevronLeft, ChevronRight, Package, Users as UsersIcon, X, FileText, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -24,12 +24,37 @@ export default function AdminDashboard() {
   const [showVaccinePopup, setShowVaccinePopup] = useState(false);
   const [ocorrenciaNotifications, setOcorrenciaNotifications] = useState<any[]>([]);
   const [showOcorrenciaPopup, setShowOcorrenciaPopup] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [userVaccineNotifications, setUserVaccineNotifications] = useState(true);
+  const [userReportNotifications, setUserReportNotifications] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) setUsername(storedUsername);
   }, []);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!username) return;
+      try {
+        const response = await fetch("/api/admin/users");
+        if (response.ok) {
+          const users = await response.json();
+          const currentUser = users.find((u: any) => u.username === username);
+          if (currentUser) {
+            setUserId(currentUser.id);
+            setUserVaccineNotifications(currentUser.vaccine_notifications);
+            setUserReportNotifications(currentUser.report_notifications);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch current user:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, [username]);
 
   useEffect(() => {
     const fetchAnimalsAndCheckVaccines = async () => {
@@ -92,6 +117,28 @@ export default function AdminDashboard() {
     router.push("/login"); // redirect to login page
   };
 
+  const updateNotification = async (type: 'vaccine' | 'report', value: boolean) => {
+    if (!userId) return;
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: userId,
+          [type === 'vaccine' ? 'vaccine_notifications' : 'report_notifications']: value,
+        }),
+      });
+      if (response.ok) {
+        if (type === 'vaccine') setUserVaccineNotifications(value);
+        else setUserReportNotifications(value);
+      } else {
+        console.error("Failed to update notifications");
+      }
+    } catch (error) {
+      console.error("Error updating notifications:", error);
+    }
+  };
+
   const dashboardCards = [
     {
       title: "Animais",
@@ -128,6 +175,14 @@ export default function AdminDashboard() {
       color: "from-amber-400 to-orange-400",
       description: "Gerir ocorrências",
       span: true
+    },
+    {
+      title: "Notificações",
+      icon: Bell,
+      color: "from-orange-600 to-orange-600",
+      description: "Gerir notificações",
+      reversed: true,
+      hasCheckboxes: true
     }
   ];
   
@@ -259,22 +314,25 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {dashboardCards.map((card, index) => {
             const Icon = card.icon;
-            return (
-              <Link key={card.href} href={card.href}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.4 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`relative h-64 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-150 overflow-hidden group cursor-pointer ${card.span ? "md:col-span-2" : ""}`}
-                >
-                  {/* Gradient Background */}
+            const isReversed = card.reversed;
+            const CardContent = (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.4 }}
+                whileHover={card.hasCheckboxes ? {} : { scale: 1.02, y: -4 }}
+                whileTap={card.hasCheckboxes ? {} : { scale: 0.98 }}
+                className={`relative h-64 ${card.hasCheckboxes ? 'bg-gradient-to-r from-orange-600 to-amber-500' : 'bg-white'} rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-150 overflow-hidden group ${card.hasCheckboxes ? '' : 'cursor-pointer'} ${card.span ? "md:col-span-2" : ""}`}
+              >
+                {/* Gradient Background */}
+                {!card.hasCheckboxes && (
                   <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity duration-150`} />
-                  
-                  {/* Content */}
-                  <div className="relative h-full p-8 flex flex-col justify-between">
-                    <div>
+                )}
+
+                {/* Content */}
+                <div className="relative h-full p-8 flex flex-col justify-between">
+                  <div>
+                    {!card.hasCheckboxes && (
                       <motion.div
                         className={`w-16 h-16 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg`}
                         whileHover={{ rotate: 5, scale: 1.1 }}
@@ -282,17 +340,55 @@ export default function AdminDashboard() {
                       >
                         <Icon className="w-8 h-8 text-white" />
                       </motion.div>
-                      <h3 className="text-2xl font-bold text-gray-800 mb-2">{card.title}</h3>
-                      <p className="text-gray-600 text-sm">{card.description}</p>
+                    )}
+                    <h3 className={`text-2xl font-bold mb-2 ${card.hasCheckboxes ? 'text-white' : 'text-gray-800'}`}>{card.title}</h3>
+                    <p className={`text-sm ${card.hasCheckboxes ? 'text-orange-100' : 'text-gray-600'}`}>{card.description}</p>
+                  </div>
+                  {card.hasCheckboxes ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+                        <label htmlFor="vaccine-notifications" className="text-gray-800 text-sm font-medium cursor-pointer flex-1">
+                          Notificações de vacinas
+                        </label>
+                        <input
+                          type="checkbox"
+                          id="vaccine-notifications"
+                          checked={userVaccineNotifications}
+                          onChange={(e) => updateNotification('vaccine', e.target.checked)}
+                          className="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-orange-500 focus:ring-2 ml-3"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+                        <label htmlFor="report-notifications" className="text-gray-800 text-sm font-medium cursor-pointer flex-1">
+                          Notificações de ocorrências
+                        </label>
+                        <input
+                          type="checkbox"
+                          id="report-notifications"
+                          checked={userReportNotifications}
+                          onChange={(e) => updateNotification('report', e.target.checked)}
+                          className="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-orange-500 focus:ring-2 ml-3"
+                        />
+                      </div>
                     </div>
+                  ) : (
                     <div className="flex items-center text-orange-600 font-medium group-hover:translate-x-2 transition-transform duration-150">
                       <span className="text-sm font-semibold">Abrir tabela</span>
                       <ChevronRight className="w-4 h-4 ml-2" />
                     </div>
-                  </div>
-                </motion.div>
-              </Link>
+                  )}
+                </div>
+              </motion.div>
             );
+
+            if (card.href && !card.hasCheckboxes) {
+              return (
+                <Link key={card.href} href={card.href}>
+                  {CardContent}
+                </Link>
+              );
+            }
+            return <div key={card.title}>{CardContent}</div>;
           })}
         </div>
       </div>
