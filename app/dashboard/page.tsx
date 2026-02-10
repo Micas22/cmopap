@@ -25,8 +25,8 @@ export default function AdminDashboard() {
   const [ocorrenciaNotifications, setOcorrenciaNotifications] = useState<any[]>([]);
   const [showOcorrenciaPopup, setShowOcorrenciaPopup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
-  const [userVaccineNotifications, setUserVaccineNotifications] = useState(true);
-  const [userReportNotifications, setUserReportNotifications] = useState(true);
+  const [userVaccineNotifications, setUserVaccineNotifications] = useState(false);
+  const [userReportNotifications, setUserReportNotifications] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -79,10 +79,7 @@ export default function AdminDashboard() {
             return diffDays >= 0 && diffDays <= 3;
           });
 
-          if (upcomingVaccines.length > 0) {
-            setVaccineNotifications(upcomingVaccines);
-            setShowVaccinePopup(true);
-          }
+          setVaccineNotifications(upcomingVaccines);
         }
       } catch (error) {
         console.error("Failed to fetch animals:", error);
@@ -98,10 +95,7 @@ export default function AdminDashboard() {
           // Check for unresolved ocorrencias
           const unresolvedOcorrencias = data.filter((ocorrencia: any) => ocorrencia.data_resolucao == null);
 
-          if (unresolvedOcorrencias.length > 0) {
-            setOcorrenciaNotifications(unresolvedOcorrencias);
-            setShowOcorrenciaPopup(true);
-          }
+          setOcorrenciaNotifications(unresolvedOcorrencias);
         }
       } catch (error) {
         console.error("Failed to fetch ocorrencias:", error);
@@ -111,6 +105,20 @@ export default function AdminDashboard() {
     fetchAnimalsAndCheckVaccines();
     fetchOcorrenciasAndCheckUnresolved();
   }, []);
+
+  // Show vaccine popup only if notifications are enabled and there are vaccines
+  useEffect(() => {
+    if (vaccineNotifications.length > 0 && userVaccineNotifications) {
+      setShowVaccinePopup(true);
+    }
+  }, [vaccineNotifications, userVaccineNotifications]);
+
+  // Show ocorrencia popup only if notifications are enabled and there are ocorrencias
+  useEffect(() => {
+    if (ocorrenciaNotifications.length > 0 && userReportNotifications) {
+      setShowOcorrenciaPopup(true);
+    }
+  }, [ocorrenciaNotifications, userReportNotifications]);
 
   const handleLogout = () => {
     localStorage.removeItem("username"); // remove stored username
