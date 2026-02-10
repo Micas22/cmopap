@@ -20,6 +20,8 @@ export default function AdminDashboard() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sexFilter, setSexFilter] = useState<number | null>(null); // null = all, 1 = macho, 0 = fêmea
+  const [raceFilter, setRaceFilter] = useState("");
+  const [showRaceSuggestions, setShowRaceSuggestions] = useState(false);
   const [animals, setAnimals] = useState<{ id: number; nome: string; chip: string; sex: number; image?: string; raca?: string; porte?: number; altura?: number; peso?: number; esterelizacao?: number; observações?: string }[]>([]);
 
 const fetchAnimals = async () => {
@@ -44,13 +46,28 @@ const handleSort = (key: string) => {
   setSortConfig({ key, direction });
 };
 
+const getRaceSuggestions = () => {
+  const raceCount: { [key: string]: number } = {};
+  animals.forEach(animal => {
+    if (animal.raca && animal.raca.trim()) {
+      const race = animal.raca.trim();
+      raceCount[race] = (raceCount[race] || 0) + 1;
+    }
+  });
+
+  return Object.entries(raceCount)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([race]) => race);
+};
+
 const filterAndSearchData = (data: typeof animals) => {
   let filtered = [...data];
 
   // Apply search filter
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
-    filtered = filtered.filter((animal) => 
+    filtered = filtered.filter((animal) =>
       animal.nome.toLowerCase().includes(query) ||
       animal.chip.toLowerCase().includes(query)
     );
@@ -61,12 +78,20 @@ const filterAndSearchData = (data: typeof animals) => {
     filtered = filtered.filter((animal) => animal.sex === sexFilter);
   }
 
+  // Apply race filter
+  if (raceFilter.trim()) {
+    const raceQuery = raceFilter.toLowerCase().trim();
+    filtered = filtered.filter((animal) =>
+      animal.raca && animal.raca.toLowerCase().includes(raceQuery)
+    );
+  }
+
   return filtered;
 };
 
-const sortData = <T extends Record<string, any>>(data: T[]) => {
+const sortData = (data: typeof animals) => {
   if (!sortConfig) return data;
-  
+
   return [...data].sort((a, b) => {
     const valA = a[sortConfig.key];
     const valB = b[sortConfig.key];
@@ -80,7 +105,6 @@ const sortData = <T extends Record<string, any>>(data: T[]) => {
     return 0;
   });
 };
-
 
 const handleSave = async () => {
   if (!editItem) return;
@@ -671,6 +695,64 @@ const handleCreateAnimal = async () => {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Race Filter */}
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Filtrar por raça..."
+                        value={raceFilter}
+                        onChange={(e) => {
+                          setRaceFilter(e.target.value);
+                          setShowRaceSuggestions(true);
+                        }}
+                        onFocus={() => setShowRaceSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowRaceSuggestions(false), 200)}
+                        className="rounded-xl border-gray-200 focus:ring-orange-500 pl-10"
+                      />
+                      <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      {raceFilter && (
+                        <button
+                          onClick={() => setRaceFilter("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={18} />
+                        </button>
+                      )}
+
+                      {/* Race Suggestions Dropdown */}
+                      <AnimatePresence>
+                        {showRaceSuggestions && getRaceSuggestions().length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
+                          >
+                            {getRaceSuggestions()
+                              .filter((race: string) => race.toLowerCase().includes(raceFilter.toLowerCase()) || raceFilter === "")
+                              .map((race: string, index: number) => (
+                                <motion.button
+                                  key={race}
+                                  type="button"
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  onClick={() => {
+                                    setRaceFilter(race);
+                                    setShowRaceSuggestions(false);
+                                  }}
+                                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                                >
+                                  {race}
+                                  {raceFilter === race && <Check className="w-4 h-4 text-orange-500" />}
+                                </motion.button>
+                              ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -776,8 +858,8 @@ const handleCreateAnimal = async () => {
                       <PawPrint className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                       <p className="text-gray-500 font-medium">Nenhum animal encontrado</p>
                       <p className="text-gray-400 text-sm mt-1">
-                        {searchQuery || sexFilter !== null 
-                          ? "Tente ajustar os filtros de pesquisa" 
+                        {searchQuery || sexFilter !== null || raceFilter
+                          ? "Tente ajustar os filtros de pesquisa"
                           : "Adicione um novo animal para começar"}
                       </p>
                     </div>
