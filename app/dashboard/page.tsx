@@ -147,6 +147,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const createNotification = async (type: string, title: string, description: string) => {
+    if (!userId) return;
+    try {
+      await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type, title, description }),
+      });
+    } catch (error) {
+      console.error('Error creating notification:', error);
+    }
+  };
+
   const dashboardCards = [
     {
       title: "Animais",
@@ -404,7 +417,9 @@ export default function AdminDashboard() {
       {/* Sidebar Toggle Arrow */}
       <motion.button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white p-5 rounded-l-3xl shadow-2xl hover:shadow-orange-500/50 transition-all duration-150 group"
+        className="-translate-y-15/2 translate-x-437 z-50 bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white p-5 rounded-l-3xl shadow-2xl hover:shadow-orange-500/50 transition-all duration-150 group relative"
+        initial={{ x: 0 }}
+        animate={{ x: isSidebarOpen ? -315 :0 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -420,6 +435,11 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+        {(vaccineNotifications.length + ocorrenciaNotifications.length) > 0 && (
+          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+            {vaccineNotifications.length + ocorrenciaNotifications.length}
+          </div>
+        )}
       </motion.button>
 
       {/* Side Panel */}
@@ -441,7 +461,7 @@ export default function AdminDashboard() {
               animate={{ x: 0 }}
               exit={{ x: 320 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-orange-50/30 shadow-2xl z-40 border-l-2 border-orange-200"
+              className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-orange-50/30 shadow-2xl z-[200] border-l-2 border-orange-200"
             >
               <div className="p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-orange-100">
@@ -454,8 +474,87 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 {/* Side panel content - blank for now */}
-                <div className="text-gray-500 text-sm flex-1">
-                  {/* Content will be added later */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-6">
+                    {/* Vaccine Notifications */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <PawPrint className="w-5 h-5 text-orange-500" />
+                        Vacinas Pendentes
+                      </h3>
+                      <div className="space-y-3">
+                        {vaccineNotifications.map((animal: any) => {
+                          const vaccineDate = new Date(animal.data_proxima_vacina);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const diffTime = vaccineDate.getTime() - today.getTime();
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          let urgencyColor = "bg-green-100 text-green-800";
+                          let urgencyText = "Próxima";
+                          if (diffDays === 0) {
+                            urgencyColor = "bg-red-100 text-red-800";
+                            urgencyText = "Hoje";
+                          } else if (diffDays === 1) {
+                            urgencyColor = "bg-orange-100 text-orange-800";
+                            urgencyText = "Amanhã";
+                          } else if (diffDays <= 3) {
+                            urgencyColor = "bg-yellow-100 text-yellow-800";
+                            urgencyText = `Em ${diffDays} dias`;
+                          }
+                          return (
+                            <div key={animal.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="font-medium text-gray-800">{animal.nome}</p>
+                              <p className="text-sm text-gray-600">Chip: {animal.chip}</p>
+                              <p className="text-sm text-gray-500">Próxima: {vaccineDate.toLocaleDateString('pt-PT')}</p>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${urgencyColor}`}>
+                                {urgencyText}
+                              </span>
+                              <Link href="/dashanimais">
+                                <Button size="sm" className="mt-2 w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
+                                  Ver Detalhes
+                                </Button>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                        {vaccineNotifications.length === 0 && <p className="text-gray-500 text-sm">Nenhuma vacina pendente</p>}
+                      </div>
+                    </div>
+                    {/* Ocorrencia Notifications */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-red-500" />
+                        Ocorrências Não Resolvidas
+                      </h3>
+                      <div className="space-y-3">
+                        {ocorrenciaNotifications.map((ocorrencia: any) => {
+                          const getEstadoText = (estado: number) => {
+                            const estados = ["Animal Perdido", "Animal Ferido", "Abandono", "Outro"];
+                            return estados[estado] || "Desconhecido";
+                          };
+                          const getEstadoColor = (estado: number) => {
+                            const colors = ["bg-blue-100 text-blue-800", "bg-red-100 text-red-800", "bg-yellow-100 text-yellow-800", "bg-gray-100 text-gray-800"];
+                            return colors[estado] || "bg-gray-100 text-gray-800";
+                          };
+                          return (
+                            <div key={ocorrencia.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="font-medium text-gray-800">{ocorrencia.titulo}</p>
+                              <p className="text-sm text-gray-600 line-clamp-2">{ocorrencia.descricao}</p>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(ocorrencia.estado)}`}>
+                                {getEstadoText(ocorrencia.estado)}
+                              </span>
+                              <Link href="/dashocorrencias">
+                                <Button size="sm" className="mt-2 w-full bg-red-500 hover:bg-red-600 text-white rounded-lg">
+                                  Ver Detalhes
+                                </Button>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                        {ocorrenciaNotifications.length === 0 && <p className="text-gray-500 text-sm">Nenhuma ocorrência não resolvida</p>}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
