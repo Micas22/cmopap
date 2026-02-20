@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { PawPrint, Phone, User, MapPin, Search, Filter } from "lucide-react";
+import { PawPrint, Phone, User, MapPin, Search, Filter, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-// Custom animated marker icon
+interface Shelter {
+  id: number;
+  name: string;
+  position: [number, number];
+  count: number;
+  owner: string;
+  contact: string;
+}
+
+// Custom animated marker icon for shelters
 const customIcon = L.divIcon({
   className: "custom-marker",
   html: `<div class="marker-inner relative flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out origin-center">
@@ -20,34 +32,22 @@ const customIcon = L.divIcon({
   popupAnchor: [0, -24],
 });
 
-const shelters = [
-  {
-    id: 1,
-    name: "Abrigo de Olhão",
-    position: [37.0286, -7.8411] as [number, number],
-    count: 45,
-    owner: "Maria Silva",
-    contact: "+351 912 345 678"
-  },
-  {
-    id: 2,
-    name: "Patas Felizes",
-    position: [37.0350, -7.8300] as [number, number],
-    count: 20,
-    owner: "João Santos",
-    contact: "+351 965 432 109"
-  },
-  {
-    id: 3,
-    name: "Gatos da Ria",
-    position: [37.0250, -7.8500] as [number, number],
-    count: 30,
-    owner: "Ana Costa",
-    contact: "+351 933 221 144"
-  }
-];
+// Temporary marker icon for selected location
+const tempIcon = L.divIcon({
+  className: "temp-marker",
+  html: `<div class="marker-inner relative flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out origin-center">
+    <span class="relative inline-flex rounded-full h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-white shadow-lg items-center justify-center text-white">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+    </span>
+  </div>`,
+  iconSize: [48, 48],
+  iconAnchor: [24, 24],
+  popupAnchor: [0, -24],
+});
 
-const ShelterMarker = ({ shelter, isVisible }: { shelter: typeof shelters[0], isVisible: boolean }) => {
+
+
+const ShelterMarker = ({ shelter, isVisible }: { shelter: Shelter, isVisible: boolean }) => {
   const markerRef = useRef<L.Marker>(null);
 
   useEffect(() => {
@@ -124,6 +124,104 @@ const ShelterMarker = ({ shelter, isVisible }: { shelter: typeof shelters[0], is
 export default function ShelterMap() {
   const [searchTerm, setSearchTerm] = useState("");
   const [minAnimals, setMinAnimals] = useState(0);
+  const [shelters, setShelters] = useState<Shelter[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
+  const [newShelter, setNewShelter] = useState({
+    nome: '',
+    responsavel: '',
+    contacto: '',
+    num_animais: 0,
+    latitude: 0,
+    longitude: 0,
+  });
+
+  useEffect(() => {
+    const fetchShelters = async () => {
+      try {
+        const response = await fetch('/api/admin/colonias');
+        if (response.ok) {
+          const colonias = await response.json();
+          const shelterData: Shelter[] = colonias.map((colonia: any) => ({
+            id: colonia.id,
+            name: colonia.nome,
+            position: [colonia.latitude, colonia.longitude] as [number, number],
+            count: colonia.num_animais,
+            owner: colonia.responsavel,
+            contact: colonia.contacto
+          }));
+          setShelters(shelterData);
+        }
+      } catch (error) {
+        console.error('Error fetching shelters:', error);
+      }
+    };
+
+    fetchShelters();
+  }, []);
+
+  const handleCreateShelter = async () => {
+    if (!newShelter.nome || !newShelter.responsavel || !newShelter.contacto || !selectedLocation) {
+      alert('Por favor, preencha todos os campos e selecione uma localização no mapa.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/colonias', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newShelter),
+      });
+
+      if (response.ok) {
+        const createdShelter = await response.json();
+        const newShelterData: Shelter = {
+          id: createdShelter.id,
+          name: createdShelter.nome,
+          position: [createdShelter.latitude, createdShelter.longitude],
+          count: createdShelter.num_animais,
+          owner: createdShelter.responsavel,
+          contact: createdShelter.contacto,
+        };
+        setShelters([...shelters, newShelterData]);
+        setIsDialogOpen(false);
+        setSelectedLocation(null);
+        setNewShelter({
+          nome: '',
+          responsavel: '',
+          contacto: '',
+          num_animais: 0,
+          latitude: 0,
+          longitude: 0,
+        });
+      } else {
+        alert('Erro ao criar abrigo. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Error creating shelter:', error);
+      alert('Erro ao criar abrigo. Tente novamente.');
+    }
+  };
+
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: (e) => {
+        if (isSelectingLocation) {
+          setSelectedLocation([e.latlng.lat, e.latlng.lng]);
+          setIsSelectingLocation(false);
+          setNewShelter({
+            ...newShelter,
+            latitude: e.latlng.lat,
+            longitude: e.latlng.lng,
+          });
+        }
+      },
+    });
+    return null;
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -160,19 +258,136 @@ export default function ShelterMap() {
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
             />
           </div>
+
+          {!selectedLocation ? (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-600 text-center">
+                Clique no mapa para selecionar a localização
+              </div>
+              <Button
+                onClick={() => setIsSelectingLocation(true)}
+                disabled={isSelectingLocation}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-2"
+              >
+                <MapPin size={16} />
+                Selecionar Localização
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-600 text-center">
+                Localização selecionada: {selectedLocation[0].toFixed(6)}, {selectedLocation[1].toFixed(6)}
+              </div>
+              <Button
+                onClick={() => setIsSelectingLocation(true)}
+                disabled={isSelectingLocation}
+                variant="outline"
+                className="w-full text-xs py-1"
+              >
+                Alterar Localização
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 rounded-xl flex items-center justify-center gap-2">
+                    <Plus size={16} />
+                    Adicionar Abrigo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Novo Abrigo</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label htmlFor="nome" className="text-right text-sm font-medium">
+                        Nome
+                      </label>
+                      <Input
+                        id="nome"
+                        value={newShelter.nome}
+                        onChange={(e) => setNewShelter({ ...newShelter, nome: e.target.value })}
+                        className="col-span-3"
+                        placeholder="Nome do abrigo"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label htmlFor="responsavel" className="text-right text-sm font-medium">
+                        Responsável
+                      </label>
+                      <Input
+                        id="responsavel"
+                        value={newShelter.responsavel}
+                        onChange={(e) => setNewShelter({ ...newShelter, responsavel: e.target.value })}
+                        className="col-span-3"
+                        placeholder="Nome do responsável"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label htmlFor="contacto" className="text-right text-sm font-medium">
+                        Contacto
+                      </label>
+                      <Input
+                        id="contacto"
+                        value={newShelter.contacto}
+                        onChange={(e) => setNewShelter({ ...newShelter, contacto: e.target.value })}
+                        className="col-span-3"
+                        placeholder="Número de telefone"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label htmlFor="num_animais" className="text-right text-sm font-medium">
+                        N.º Animais
+                      </label>
+                      <Input
+                        id="num_animais"
+                        type="number"
+                        value={newShelter.num_animais}
+                        onChange={(e) => setNewShelter({ ...newShelter, num_animais: Number(e.target.value) })}
+                        className="col-span-3"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <label className="text-right text-sm font-medium">
+                        Localização
+                      </label>
+                      <div className="col-span-3 text-sm text-gray-600">
+                        Localização selecionada: {selectedLocation[0].toFixed(6)}, {selectedLocation[1].toFixed(6)}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" onClick={handleCreateShelter} className="bg-orange-500 hover:bg-orange-600">
+                      Criar Abrigo
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </div>
       </div>
 
-    <MapContainer 
-      center={[37.0286, -7.8411]} 
-      zoom={15} 
-      scrollWheelZoom={false} 
+    <MapContainer
+      center={[37.0286, -7.8411]}
+      zoom={15}
+      scrollWheelZoom={false}
       className="h-full w-full"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
       />
+      <MapClickHandler />
+      {selectedLocation && (
+        <Marker position={selectedLocation} icon={tempIcon}>
+          <Popup>
+            <div className="text-sm text-gray-700">
+              Localização selecionada para novo abrigo
+            </div>
+          </Popup>
+        </Marker>
+      )}
       {shelters.map((shelter) => {
         const isVisible = shelter.name.toLowerCase().includes(searchTerm.toLowerCase()) && shelter.count >= minAnimals;
         return <ShelterMarker key={shelter.id} shelter={shelter} isVisible={isVisible} />;
