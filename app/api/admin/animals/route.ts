@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const observações = formData.get("observações") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
+    const arquivos = formData.getAll("arquivos") as File[];
 
     let imagePath = null;
     if (image) {
@@ -51,6 +52,26 @@ export async function POST(request: Request) {
 
       await writeFile(path.join(uploadDir, filename), buffer);
       imagePath = `/uploads/${filename}`;
+    }
+
+    // Handle multiple file uploads for arquivos - store as comma-separated paths
+    let arquivosPath = null;
+    if (arquivos && arquivos.length > 0) {
+      const uploadDir = path.join(process.cwd(), "public/uploads");
+
+      try {
+        await mkdir(uploadDir, { recursive: true });
+      } catch (e) {}
+
+      const filenameList: string[] = [];
+      for (const arquivo of arquivos) {
+        const bytes = await arquivo.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const filename = `${Date.now()}-${arquivo.name.replace(/\s/g, "-")}`;
+        await writeFile(path.join(uploadDir, filename), buffer);
+        filenameList.push(`/uploads/${filename}`);
+      }
+      arquivosPath = filenameList.join(",");
     }
 
     if (!nome || !chip || isNaN(sex) || !raca || porte === null || isNaN(porte) || altura === null || isNaN(altura) || peso === null || isNaN(peso) || esterelizacao === null || isNaN(esterelizacao)) {
@@ -85,6 +106,7 @@ export async function POST(request: Request) {
         ...(observações ? { observacoes: observações } : {}),
         ...(data_ultima_vacina ? { data_ultima_vacina: new Date(data_ultima_vacina) } : {}),
         ...(data_proxima_vacina ? { data_proxima_vacina: new Date(data_proxima_vacina) } : {}),
+        ...(arquivosPath ? { arquivos: arquivosPath } : {}),
       } as any,
     });
 
@@ -114,6 +136,7 @@ export async function PUT(request: Request) {
     const observações = formData.get("observações") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
+    const arquivos = formData.get("arquivos") as File | null;
 
     if (!id) {
       return NextResponse.json({ error: "Missing ID" }, { status: 400 });
@@ -139,6 +162,7 @@ export async function PUT(request: Request) {
     if (data_ultima_vacina) data.data_ultima_vacina = new Date(data_ultima_vacina);
     if (data_proxima_vacina) data.data_proxima_vacina = new Date(data_proxima_vacina);
 
+    // Handle image upload
     if (image) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -151,6 +175,56 @@ export async function PUT(request: Request) {
 
       await writeFile(path.join(uploadDir, filename), buffer);
       data.image = `/uploads/${filename}`;
+    }
+
+    // Handle arquivos (multiple documents) upload - append to existing or create new
+    const arquivosFiles = formData.getAll("arquivos") as File[];
+    const filesToRemove = formData.get("filesToRemove") as string | null;
+    const clearArquivos = formData.get("clearArquivos") as string | null;
+    
+    if (arquivosFiles && arquivosFiles.length > 0 && arquivosFiles[0].size > 0) {
+      const uploadDir = path.join(process.cwd(), "public/uploads");
+
+      try {
+        await mkdir(uploadDir, { recursive: true });
+      } catch (e) {}
+
+      // Get existing arquivos to append to
+      const existingAnimal = await prisma.animal.findUnique({
+        where: { id },
+        select: { arquivos: true }
+      });
+      
+      const existingArquivos = existingAnimal?.arquivos ? existingAnimal.arquivos.split(",") : [];
+      const newArquivos: string[] = [];
+
+      for (const arquivo of arquivosFiles) {
+        const bytes = await arquivo.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const filename = `${Date.now()}-${arquivo.name.replace(/\s/g, "-")}`;
+        await writeFile(path.join(uploadDir, filename), buffer);
+        newArquivos.push(`/uploads/${filename}`);
+      }
+
+      // Combine existing and new arquivos
+      const allArquivos = [...existingArquivos, ...newArquivos];
+      data.arquivos = allArquivos.join(",");
+    } else if (filesToRemove) {
+      // Handle removal of specific files
+      const existingAnimal = await prisma.animal.findUnique({
+        where: { id },
+        select: { arquivos: true }
+      });
+      
+      if (existingAnimal?.arquivos) {
+        const existingArquivos = existingAnimal.arquivos.split(",");
+        const filesToRemoveArray = filesToRemove.split(",");
+        const filteredArquivos = existingArquivos.filter((f: string) => !filesToRemoveArray.includes(f));
+        data.arquivos = filteredArquivos.length > 0 ? filteredArquivos.join(",") : null;
+      }
+    } else if (clearArquivos === "true") {
+      // Handle clearing all arquivos
+      data.arquivos = null;
     }
 
     const updatedAnimal = await prisma.animal.update({
