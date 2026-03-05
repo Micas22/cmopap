@@ -99,7 +99,135 @@ export default function AdminDashboard() {
     return arquivos.split(",").filter(f => f.trim());
   };
 
-  const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
+const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
+
+  // Animal History State
+  const [animalHistory, setAnimalHistory] = useState<{ id: string; titulo: string; ficheiro?: string; created_at: string }[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [viewTab, setViewTab] = useState<"details" | "history">("details");
+  const [createHistoryDialogOpen, setCreateHistoryDialogOpen] = useState(false);
+  const [editHistoryItem, setEditHistoryItem] = useState<{ id: string; titulo: string; ficheiro?: string } | null>(null);
+  const [newHistoryTitulo, setNewHistoryTitulo] = useState("");
+  const [newHistoryFicheiro, setNewHistoryFicheiro] = useState<File | null>(null);
+  const [editHistoryFicheiro, setEditHistoryFicheiro] = useState<File | null>(null);
+  const [historyToDelete, setHistoryToDelete] = useState<string | null>(null);
+
+  // Fetch animal history
+  const fetchAnimalHistory = async (animalId: number) => {
+    setIsLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/admin/animals/history?animalId=${animalId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnimalHistory(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch animal history:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Handle view animal - fetch history too
+  const handleViewAnimal = async (animal: any) => {
+    setViewItem({ ...animal });
+    setViewTab("details");
+    await fetchAnimalHistory(animal.id);
+  };
+
+  // Create history event
+  const handleCreateHistory = async () => {
+    if (!newHistoryTitulo || !viewItem) return;
+    try {
+      const formData = new FormData();
+      formData.append("titulo", newHistoryTitulo);
+      formData.append("animalid", String(viewItem.id));
+      if (newHistoryFicheiro) {
+        formData.append("ficheiro", newHistoryFicheiro);
+      }
+
+      const res = await fetch("/api/admin/animals/history", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Failed to create history: ${error.error}`);
+        return;
+      }
+
+      const newHistory = await res.json();
+      setAnimalHistory((prev) => [newHistory, ...prev]);
+      setNewHistoryTitulo("");
+      setNewHistoryFicheiro(null);
+      setCreateHistoryDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error creating history event");
+    }
+  };
+
+  // Update history event
+  const handleUpdateHistory = async () => {
+    if (!editHistoryItem || !editHistoryItem.titulo) return;
+    try {
+      const formData = new FormData();
+      formData.append("id", editHistoryItem.id);
+      formData.append("titulo", editHistoryItem.titulo);
+      if (editHistoryFicheiro) {
+        formData.append("ficheiro", editHistoryFicheiro);
+      }
+      if (editHistoryItem.ficheiro === null || editHistoryItem.ficheiro === "") {
+        formData.append("deleteFile", "true");
+      }
+
+      const res = await fetch("/api/admin/animals/history", {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Failed to update history: ${error.error}`);
+        return;
+      }
+
+      const updatedHistory = await res.json();
+      setAnimalHistory((prev) =>
+        prev.map((h) => (h.id === updatedHistory.id ? updatedHistory : h))
+      );
+      setEditHistoryItem(null);
+      setEditHistoryFicheiro(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error updating history event");
+    }
+  };
+
+  // Delete history event
+  const handleDeleteHistory = async () => {
+    if (!historyToDelete) return;
+    try {
+      const res = await fetch("/api/admin/animals/history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: historyToDelete }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Failed to delete history: ${error.error}`);
+        return;
+      }
+
+      setAnimalHistory((prev) => prev.filter((h) => h.id !== historyToDelete));
+      setHistoryToDelete(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting history event");
+    }
+  };
 
   const handleSave = async () => {
     if (!editItem) return;
@@ -557,7 +685,7 @@ export default function AdminDashboard() {
                 </TableHeader>
                 <TableBody>
                   {sortData(filterAndSearchData(animals)).map((a) => (
-                    <TableRow key={a.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50 cursor-pointer" onClick={() => setViewItem({ ...a })}>
+<TableRow key={a.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50 cursor-pointer" onClick={() => handleViewAnimal(a)}>
                       <TableCell className="pl-8 font-medium text-gray-600">#{a.id}</TableCell>
                       <TableCell>
                         {a.image ? <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200"><img src={a.image} alt={a.nome} className="w-full h-full object-cover" /></div> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400"><ImageIcon className="w-5 h-5" /></div>}
@@ -578,45 +706,156 @@ export default function AdminDashboard() {
         </motion.div>
       </main>
 
-      {/* VIEW MODAL */}
+{/* VIEW MODAL */}
       <Dialog open={!!viewItem} onOpenChange={(open) => { if (!open) setViewItem(null); }}>
         <DialogContent className="rounded-2xl max-w-2xl">
-          <DialogHeader><DialogTitle className="text-orange-500 text-2xl">Detalhes do Animal</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-orange-500 text-2xl">{viewItem?.nome}</DialogTitle></DialogHeader>
           {viewItem && (
-            <div className="space-y-6 py-4">
-              {viewItem.image && <div className="flex justify-center"><div className="w-48 h-48 rounded-2xl overflow-hidden border-2 border-gray-200"><img src={viewItem.image} alt={viewItem.nome} className="w-full h-full object-cover" /></div></div>}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">ID</label><div className="text-lg font-medium">#{viewItem.id}</div></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Nome</label><div className="text-lg font-medium">{viewItem.nome}</div></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Chip</label><div className="text-lg font-mono">{viewItem.chip}</div></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Sexo</label><div className="text-lg font-medium">{viewItem.sex === 1 ? "Macho" : "Fêmea"}</div></div>
-                {viewItem.raca && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Raça</label><div className="text-lg font-medium">{viewItem.raca}</div></div>}
-                {viewItem.porte !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Porte</label><div className="text-lg font-medium">{viewItem.porte === 1 ? "Pequeno" : viewItem.porte === 2 ? "Médio" : "Grande"}</div></div>}
-                {viewItem.altura !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Altura</label><div className="text-lg font-medium">{viewItem.altura} cm</div></div>}
-                {viewItem.peso !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Peso</label><div className="text-lg font-medium">{viewItem.peso} kg</div></div>}
-                {viewItem.esterelizacao !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Esterilização</label><div className="text-lg font-medium">{viewItem.esterelizacao === 1 ? "Esterilizado" : "Não Esterilizado"}</div></div>}
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 mb-4">
+                <button
+                  onClick={() => setViewTab("details")}
+                  className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors ${viewTab === "details" ? "bg-orange-50 text-orange-600 border-b-2 border-orange-500" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Detalhes
+                </button>
+                <button
+                  onClick={() => setViewTab("history")}
+                  className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 ${viewTab === "history" ? "bg-orange-50 text-orange-600 border-b-2 border-orange-500" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Histórico
+                  {animalHistory.length > 0 && (
+                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">{animalHistory.length}</span>
+                  )}
+                </button>
               </div>
-              {viewItem.observações && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Observações</label><div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl border whitespace-pre-wrap">{viewItem.observações}</div></div>}
-              
-              {/* Multiple arquivos display */}
-              {viewItem.arquivos && getArquivosArray(viewItem.arquivos).length > 0 && (
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Arquivos ({getArquivosArray(viewItem.arquivos).length})</label>
-                  <div className="space-y-2">
-                    {getArquivosArray(viewItem.arquivos).map((arquivo: string, index: number) => (
-                      <a key={index} href={arquivo} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 hover:underline p-2 bg-gray-50 rounded-lg border">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        {arquivo.split('/').pop()}
-                      </a>
-                    ))}
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {viewTab === "details" && (
+                  <>
+                    {viewItem.image && <div className="flex justify-center"><div className="w-48 h-48 rounded-2xl overflow-hidden border-2 border-gray-200"><img src={viewItem.image} alt={viewItem.nome} className="w-full h-full object-cover" /></div></div>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">ID</label><div className="text-lg font-medium">#{viewItem.id}</div></div>
+                      <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Chip</label><div className="text-lg font-mono">{viewItem.chip}</div></div>
+                      <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Sexo</label><div className="text-lg font-medium">{viewItem.sex === 1 ? "Macho" : "Fêmea"}</div></div>
+                      {viewItem.raca && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Raça</label><div className="text-lg font-medium">{viewItem.raca}</div></div>}
+                      {viewItem.porte !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Porte</label><div className="text-lg font-medium">{viewItem.porte === 1 ? "Pequeno" : viewItem.porte === 2 ? "Médio" : "Grande"}</div></div>}
+                      {viewItem.altura !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Altura</label><div className="text-lg font-medium">{viewItem.altura} cm</div></div>}
+                      {viewItem.peso !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Peso</label><div className="text-lg font-medium">{viewItem.peso} kg</div></div>}
+                      {viewItem.esterelizacao !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Esterilização</label><div className="text-lg font-medium">{viewItem.esterelizacao === 1 ? "Esterilizado" : "Não Esterilizado"}</div></div>}
+                      {viewItem.data_ultima_vacina && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Última Vacina</label><div className="text-lg font-medium">{new Date(viewItem.data_ultima_vacina).toLocaleDateString("pt-PT")}</div></div>}
+                      {viewItem.data_proxima_vacina && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Próxima Vacina</label><div className="text-lg font-medium">{new Date(viewItem.data_proxima_vacina).toLocaleDateString("pt-PT")}</div></div>}
+                    </div>
+                    {viewItem.observações && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Observações</label><div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl border whitespace-pre-wrap">{viewItem.observações}</div></div>}
+                    
+                    {viewItem.arquivos && getArquivosArray(viewItem.arquivos).length > 0 && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Arquivos ({getArquivosArray(viewItem.arquivos).length})</label>
+                        <div className="space-y-2">
+                          {getArquivosArray(viewItem.arquivos).map((arquivo: string, index: number) => (
+                            <a key={index} href={arquivo} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 hover:underline p-2 bg-gray-50 rounded-lg border">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                              {arquivo.split('/').pop()}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {viewTab === "history" && (
+                  <div className="space-y-4">
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={() => setCreateHistoryDialogOpen(true)} 
+                        className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                        size="sm"
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Novo Evento
+                      </Button>
+                    </div>
+
+                    {isLoadingHistory ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      </div>
+                    ) : animalHistory.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="text-lg mb-2">Nenhum histórico registado</p>
+                        <p className="text-sm">Clique em "Novo Evento" para adicionar o primeiro evento</p>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                        
+                        <div className="space-y-4">
+                          {animalHistory.map((history) => (
+                            <div key={history.id} className="relative pl-10">
+                              <div className="absolute left-2.5 w-3 h-3 rounded-full bg-orange-500 border-2 border-white"></div>
+                              
+                              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h4 className="font-semibold text-gray-800">{history.titulo}</h4>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-2">
+                                      {new Date(history.created_at).toLocaleDateString("pt-PT", { 
+                                        day: "2-digit", 
+                                        month: "long", 
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
+                                    </p>
+                                    {history.ficheiro && (
+                                      <a 
+                                        href={history.ficheiro} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 hover:underline"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01z" />
+                                        </svg>
+                                        Ver ficheiro
+                                      </a>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <button 
+                                      onClick={() => setEditHistoryItem({ id: history.id, titulo: history.titulo, ficheiro: history.ficheiro })}
+                                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => setHistoryToDelete(history.id)}
+                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
+              </div>
+
+              {viewTab === "details" && (
+                <div className="flex gap-3 pt-4 border-t mt-4">
+                  <Button onClick={() => { setViewItem(null); setEditItem({ ...viewItem }); setFilesToRemove([]); }} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl"><Pencil className="mr-2 h-4 w-4" />Editar</Button>
+                  <Button variant="outline" onClick={() => setViewItem(null)} className="flex-1 rounded-xl">Fechar</Button>
                 </div>
               )}
-              
-              <div className="flex gap-3 pt-4 border-t">
-                <Button onClick={() => { setViewItem(null); setEditItem({ ...viewItem }); setFilesToRemove([]); }} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl"><Pencil className="mr-2 h-4 w-4" />Editar</Button>
-                <Button variant="outline" onClick={() => setViewItem(null)} className="flex-1 rounded-xl">Fechar</Button>
-              </div>
             </div>
           )}
         </DialogContent>
@@ -729,10 +968,152 @@ export default function AdminDashboard() {
                   {editArquivosFile && editArquivosFile.length > 0 && <p className="text-xs text-green-600">{editArquivosFile.length} novo(s) arquivo(s) selecionado(s)</p>}
                 </div>
 
-                <button type="button" onClick={handleSave} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl h-11 shadow-md font-semibold">Salvar Alterações</button>
+<button type="button" onClick={handleSave} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl h-11 shadow-md font-semibold">Salvar Alterações</button>
               </div>
             )}
           </motion.div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CREATE HISTORY DIALOG */}
+      <Dialog open={createHistoryDialogOpen} onOpenChange={setCreateHistoryDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-orange-500 text-xl font-bold">Novo Evento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Título <span className="text-orange-500">*</span></label>
+              <Input 
+                placeholder="Ex: Vacinação, Consulta Veterinária..." 
+                value={newHistoryTitulo} 
+                onChange={(e) => setNewHistoryTitulo(e.target.value)}
+                className="rounded-xl border-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Ficheiro (Opcional)</label>
+              <Input 
+                type="file" 
+                accept="*" 
+                onChange={(e) => setNewHistoryFicheiro(e.target.files?.[0] || null)}
+                className="rounded-xl border-gray-200 file:text-orange-600 file:font-medium file:bg-orange-50 file:rounded-lg file:border-0 file:mr-4 file:px-4 file:py-2"
+              />
+              {newHistoryFicheiro && <p className="text-xs text-green-600">{newHistoryFicheiro.name}</p>}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={handleCreateHistory}
+                disabled={!newHistoryTitulo.trim()}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+              >
+                Criar Evento
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setCreateHistoryDialogOpen(false);
+                  setNewHistoryTitulo("");
+                  setNewHistoryFicheiro(null);
+                }}
+                className="flex-1 rounded-xl"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT HISTORY DIALOG */}
+      <Dialog open={!!editHistoryItem} onOpenChange={(open) => { if (!open) { setEditHistoryItem(null); setEditHistoryFicheiro(null); } }}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-orange-500 text-xl font-bold">Editar Evento</DialogTitle>
+          </DialogHeader>
+          {editHistoryItem && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Título <span className="text-orange-500">*</span></label>
+                <Input 
+                  placeholder="Ex: Vacinação, Consulta Veterinária..." 
+                  value={editHistoryItem.titulo} 
+                  onChange={(e) => setEditHistoryItem({ ...editHistoryItem, titulo: e.target.value })}
+                  className="rounded-xl border-gray-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Ficheiro</label>
+                {editHistoryItem.ficheiro && (
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border mb-2">
+                    <a href={editHistoryItem.ficheiro} target="_blank" rel="noopener noreferrer" className="text-sm text-orange-600 hover:underline flex-1 truncate">
+                      {editHistoryItem.ficheiro.split('/').pop()}
+                    </a>
+<button 
+                      type="button" 
+                      onClick={() => setEditHistoryItem({ ...editHistoryItem, ficheiro: "" })}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <Input 
+                  type="file" 
+                  accept="*" 
+                  onChange={(e) => setEditHistoryFicheiro(e.target.files?.[0] || null)}
+                  className="rounded-xl border-gray-200 file:text-orange-600 file:font-medium file:bg-orange-50 file:rounded-lg file:border-0 file:mr-4 file:px-4 file:py-2"
+                />
+                {editHistoryFicheiro && <p className="text-xs text-green-600">{editHistoryFicheiro.name}</p>}
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  onClick={handleUpdateHistory}
+                  disabled={!editHistoryItem.titulo.trim()}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                >
+                  Guardar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditHistoryItem(null);
+                    setEditHistoryFicheiro(null);
+                  }}
+                  className="flex-1 rounded-xl"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE HISTORY CONFIRMATION */}
+      <Dialog open={!!historyToDelete} onOpenChange={(open) => { if (!open) setHistoryToDelete(null); }}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-red-500 text-xl font-bold">Confirmar Eliminação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-gray-600">Tens a certeza que queres eliminar este evento do histórico? Esta ação não pode ser desfeita.</p>
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={handleDeleteHistory}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-xl"
+              >
+                Eliminar
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setHistoryToDelete(null)}
+                className="flex-1 rounded-xl"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
