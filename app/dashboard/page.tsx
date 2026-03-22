@@ -160,6 +160,7 @@ export default function AdminDashboard() {
     }
   };
 
+
   const dashboardCards = [
     {
       title: "Animais",
@@ -198,6 +199,14 @@ export default function AdminDashboard() {
       span: true
     },
     {
+      title: "Documentos",
+      icon: FileText,
+      href: "/dashdocumentos",
+      color: "from-orange-500 to-orange-600",
+      description: "Gerar documentos",
+      span: true
+    },
+    {
       title: "Notificações",
       icon: Bell,
       color: "from-orange-600 to-orange-600",
@@ -206,6 +215,7 @@ export default function AdminDashboard() {
       hasCheckboxes: true
     }
   ];
+
   
   return (
     <>

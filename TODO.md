@@ -1,16 +1,9 @@
-# Animal History Implementation
+# Documentos Dashboard Implementation
 
-## Completed
-- [x] Plan and analyze codebase
-- [x] Update API route (app/api/admin/animals/history/route.ts)
-  - [x] Add GET endpoint for animal history
-  - [x] Add POST endpoint to create history event
-  - [x] Add PUT endpoint to update history event
-  - [x] Add DELETE endpoint to delete history event
+## Steps:
+- [x] 1. Update app/dashboard/page.tsx - Add "Documentos" card to dashboardCards array
+- [x] 2. Create app/dashdocumentos/page.tsx - New document selection page with 4 static options
+- [ ] 3. Test navigation and layout (npm run dev, check /dashboard → Documentos)
+- [ ] 4. attempt_completion
 
-## In Progress
-- [ ] Update Frontend (app/dashanimais/page.tsx)
-  - [ ] Add state for animal history
-  - [ ] Fetch history when viewing an animal
-  - [ ] Add history tab/section with timeline UI
-  - [ ] Add create/edit/delete functionality for history events
+Current step: 3/4
