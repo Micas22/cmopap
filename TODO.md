@@ -1,9 +1,7 @@
-# Documentos Dashboard Implementation
+# TODO: Fix viewItem/setViewItem error - COMPLETED ✅
 
-## Steps:
-- [x] 1. Update app/dashboard/page.tsx - Add "Documentos" card to dashboardCards array
-- [x] 2. Create app/dashdocumentos/page.tsx - New document selection page with 4 static options
-- [ ] 3. Test navigation and layout (npm run dev, check /dashboard → Documentos)
-- [ ] 4. attempt_completion
+## Steps completed:
+- [x] 1. Added missing `useState` for `viewItem` in app/dashdocumentos/aconselhamento/page.tsx
+- [x] 2. Verified fix via file contents (state now declared, references resolve)
+- [x] 3. Task complete
 
-Current step: 3/4

@@ -25,7 +25,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "textarea": "^0.3.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

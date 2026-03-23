@@ -17,20 +17,21 @@ model User {
 }
 
 model Animal {
-  id                  Int       @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   nome                String?
-  chip                String?   @unique
+  chip                String?           @unique
   sex                 Int?
   image               String?
   raca                String?
-  porte               Int?      @db.SmallInt
+  porte               Int?              @db.SmallInt
   altura              Int?
   peso                Float?
-  esterelizacao       Int?      @db.SmallInt
+  esterelizacao       Int?              @db.SmallInt
   observacoes         String?
-  data_ultima_vacina  DateTime? @map("data_ultima_vacina")
-  data_proxima_vacina DateTime? @map("data_proxima_vacina")
-  arquivos             String?
+  data_ultima_vacina  DateTime?         @map("data_ultima_vacina")
+  data_proxima_vacina DateTime?         @map("data_proxima_vacina")
+  arquivos            String?
+  aconselhamentos     aconselhamentos[]
 }
 
 model Stocks {
@@ -89,4 +90,17 @@ model AnimalHistory {
   titulo     String?
   ficheiro   String?
   animalid   BigInt?
+}
+
+model aconselhamentos {
+  id            BigInt    @id @default(autoincrement())
+  data          DateTime  @db.Date
+  hora          DateTime? @db.Time(6)
+  nome          String?
+  animal        Int?
+  motivo        String?
+  administracao String?
+  feedback      String?
+  local         String?
+  Animal        Animal?   @relation(fields: [animal], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

@@ -51,9 +51,12 @@ export default function DashDocumentos() {
   ];
 
   const handleDocumentClick = (title: string) => {
-    // Static for now - show alert as placeholder
-    alert(`Funcionalidade "${title}" - Em desenvolvimento. Em breve poderá gerar este documento!`);
-    // Later: open modal/form for document generation
+    if (title === "Registo de aconselhamentos") {
+      router.push("/dashdocumentos/aconselhamento");
+    } else {
+      // Static for now - show alert as placeholder
+      alert(`Funcionalidade "${title}" - Em desenvolvimento. Em breve poderá gerar este documento!`);
+    }
   };
 
   return (
