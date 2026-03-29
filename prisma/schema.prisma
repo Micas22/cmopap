@@ -93,14 +93,13 @@ model AnimalHistory {
 }
 
 model aconselhamentos {
-  id            BigInt    @id @default(autoincrement())
-  data          DateTime  @db.Date
-  hora          DateTime? @db.Time(6)
+  id            BigInt   @id @default(autoincrement())
+  data          DateTime @db.Date
   nome          String?
   animal        Int?
   motivo        String?
   administracao String?
   feedback      String?
   local         String?
-  Animal        Animal?   @relation(fields: [animal], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Animal        Animal?  @relation(fields: [animal], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

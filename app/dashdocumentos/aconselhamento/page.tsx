@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Pencil, Trash2, Plus, ChevronDown, Check, X, ArrowLeft, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,128 +9,36 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-// Type for Aconselhamento based on schema.prisma
+// Type for Aconselhamento (API returns BigInt id as string/number)
 type Aconselhamento = {
-  id: number;
-  data: string; // YYYY-MM-DD
-  hora: string; // HH:MM
-  nome: string;
+  id: string | number;
+  data: string;
+  nome: string | null;
   animal: number | null;
-  motivo: string;
-  administracao: string;
-  feedback: string;
-  local: string;
+  motivo: string | null;
+  administracao: string | null;
+  feedback: string | null;
+  local: string | null;
+  Animal?: {
+    id: number;
+    nome?: string;
+  } | null;
 };
 
-// Static mock data
-const initialData: Aconselhamento[] = [
-  {
-    id: 1,
-    data: "2024-10-01",
-    hora: "10:30",
-    nome: "João Silva",
-    animal: 123,
-    motivo: "Consulta de rotina pós-adoção",
-    administracao: "Desparasitação aplicada",
-    feedback: "Animal reagiu bem ao tratamento",
-    local: "Consultório Principal"
-  },
-  {
-    id: 2,
-    data: "2024-10-02",
-    hora: "14:15",
-    nome: "Maria Santos",
-    animal: 456,
-    motivo: "Problemas de pele persistentes",
-    administracao: "Creme dermatológico tópico",
-    feedback: "Melhoria visível esperada em 7 dias",
-    local: "Sala de Dermatologia"
-  },
-  {
-    id: 3,
-    data: "2024-10-03",
-    hora: "09:00",
-    nome: "Pedro Oliveira",
-    animal: null,
-    motivo: "Aconselhamento pré-adoção",
-    administracao: "-",
-    feedback: "Cliente bem informado sobre cuidados",
-    local: "Sala de Aconselhamento"
-  },
-  {
-    id: 4,
-    data: "2024-10-04",
-    hora: "16:45",
-    nome: "Ana Costa",
-    animal: 789,
-    motivo: "Controlo de peso",
-    administracao: "Plano dietético iniciado",
-    feedback: "Cliente motivada para follow-up",
-    local: "Consultório de Nutrição"
-  },
-  {
-    id: 5,
-    data: "2024-10-05",
-    hora: "11:20",
-    nome: "Carlos Mendes",
-    animal: 234,
-    motivo: "Comportamento agressivo",
-    administracao: "Sessão de treino comportamental",
-    feedback: "Progresso inicial positivo",
-    local: "Área de Treino"
-  },
-  {
-    id: 6,
-    data: "2024-10-06",
-    hora: "13:30",
-    nome: "Sofia Pereira",
-    animal: 567,
-    motivo: "Vacinação anual",
-    administracao: "Vacina antirrábica + polivalente",
-    feedback: "Sem reações adversas",
-    local: "Sala de Vacinação"
-  },
-  {
-    id: 7,
-    data: "2024-10-07",
-    hora: "15:00",
-    nome: "Ricardo Almeida",
-    animal: 890,
-    motivo: "Cirurgia de esterilização",
-    administracao: "Castração realizada com sucesso",
-    feedback: "Recuperação em vigilância",
-    local: "Bloco Operatório"
-  },
-  {
-    id: 8,
-    data: "2024-10-08",
-    hora: "12:10",
-    nome: "Laura Fernandes",
-    animal: null,
-    motivo: "Aconselhamento de emergência",
-    administracao: "Primeiros socorros aplicados",
-    feedback: "Estabilizado, recomenda-se acompanhamento",
-    local: "Sala de Emergências"
-  }
-];
-
 export default function AconselhamentosPage() {
-  const [data, setData] = useState<Aconselhamento[]>(initialData);
+  const [data, setData] = useState<Aconselhamento[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<Aconselhamento | null>(null);
-(null)
+  const [viewItem, setViewItem] = useState<Aconselhamento | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Aconselhamento; direction: "asc" | "desc" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-const [showPopup, setShowPopup] = useState(false);
-  const [viewItem, setViewItem] = useState<Aconselhamento | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("Admin");
   const router = useRouter();
-
   // Form state for create/edit
   const [formData, setFormData] = useState({
     data: "",
-    hora: "",
     nome: "",
     animal: "",
     motivo: "",
@@ -140,6 +47,27 @@ const [showPopup, setShowPopup] = useState(false);
     local: ""
   });
 
+  const fetchAconselhamentos = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/aconselhamentos");
+      if (!res.ok) {
+        throw new Error("Failed to fetch");
+      }
+      const fetchedData = await res.json();
+      setData(Array.isArray(fetchedData) ? fetchedData : []);
+    } catch (error) {
+      console.error("Failed to fetch aconselhamentos:", error);
+      alert("Erro ao carregar aconselhamentos");
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAconselhamentos();
+  }, []);
   const handleSort = (key: keyof Aconselhamento) => {
     let direction: "asc" | "desc" = "asc";
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
@@ -147,20 +75,18 @@ const [showPopup, setShowPopup] = useState(false);
     }
     setSortConfig({ key, direction });
   };
-
   const filterAndSearchData = (items: Aconselhamento[]) => {
     let filtered = [...items];
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((item) =>
-        item.nome.toLowerCase().includes(query) ||
-        item.motivo.toLowerCase().includes(query) ||
-        item.local.toLowerCase().includes(query)
+        (item.nome ?? '').toLowerCase().includes(query) ||
+        (item.motivo ?? '').toLowerCase().includes(query) ||
+        (item.local ?? '').toLowerCase().includes(query)
       );
     }
     return filtered;
   };
-
   const sortData = (items: Aconselhamento[]) => {
     if (!sortConfig) return items;
     return [...items].sort((a, b) => {
@@ -181,65 +107,134 @@ const [showPopup, setShowPopup] = useState(false);
       return 0;
     });
   };
+  const handleCreate = async () => {
+    // Validate date
+    if (!formData.data || isNaN(new Date(formData.data).getTime())) {
+      alert("Por favor, insira uma data válida (YYYY-MM-DD)");
+      return;
+    }
 
-  const handleCreate = () => {
-    const newId = Math.max(...data.map(d => d.id), 0) + 1;
-    const newItem: Aconselhamento = {
-      id: newId,
+    const createData = {
       data: formData.data,
-      hora: formData.hora,
       nome: formData.nome,
-      animal: formData.animal ? parseInt(formData.animal) : null,
+      animal: formData.animal ? Number(formData.animal) : null,
       motivo: formData.motivo,
-      administracao: formData.administracao,
-      feedback: formData.feedback,
-      local: formData.local
+      administracao: formData.administracao || null,
+      feedback: formData.feedback || null,
+      local: formData.local || null,
     };
-    setData([newItem, ...data]);
-    setFormData({ data: "", hora: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
-    setCreateDialogOpen(false);
-  };
 
-  const handleSaveEdit = () => {
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createData),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Erro ao criar: ${error.error}`);
+        return;
+      }
+      // Refetch
+      await fetchAconselhamentos();
+      setFormData({ data: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
+      setCreateDialogOpen(false);
+    } catch (error) {
+      console.error("Create error:", error);
+      alert("Erro ao criar aconselhamento");
+    }
+  };
+  const handleSaveEdit = async () => {
     if (!editItem) return;
-    setData(data.map(item => item.id === editItem.id ? { ...editItem, ...formData, animal: formData.animal ? parseInt(formData.animal) : null } : item));
-    setEditItem(null);
-    setFormData({ data: "", hora: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
-  };
 
-  const handleDelete = (id: number) => {
-    setData(data.filter(item => item.id !== id));
-  };
+    // Validate date
+    if (!formData.data || isNaN(new Date(formData.data).getTime())) {
+      alert("Por favor, insira uma data válida (YYYY-MM-DD)");
+      return;
+    }
 
+    const updateData = {
+      id: editItem.id,
+      data: formData.data,
+      nome: formData.nome,
+      animal: formData.animal ? Number(formData.animal) : null,
+      motivo: formData.motivo,
+      administracao: formData.administracao || null,
+      feedback: formData.feedback || null,
+      local: formData.local || null,
+    };
+
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Erro ao atualizar: ${error.error}`);
+        return;
+      }
+      // Refetch
+      await fetchAconselhamentos();
+      setEditItem(null);
+      setFormData({ data: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
+    } catch (error) {
+      console.error("Update error:", error);
+      alert("Erro ao atualizar aconselhamento");
+    }
+  };
+  const handleDelete = async (id: string | number) => {
+    if (!confirm('Tem a certeza que deseja eliminar este aconselhamento?')) return;
+
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Erro ao eliminar: ${error.error}`);
+        return;
+      }
+      // Refetch
+      await fetchAconselhamentos();
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Erro ao eliminar aconselhamento");
+    }
+  };
   const handleEdit = (item: Aconselhamento) => {
     setEditItem(item);
     setFormData({
-      data: item.data,
-      hora: item.hora,
-      nome: item.nome,
+      data: item.data || "",
+      nome: item.nome || "",
       animal: item.animal?.toString() || "",
-      motivo: item.motivo,
-      administracao: item.administracao,
-      feedback: item.feedback,
-      local: item.local
+      motivo: item.motivo || "",
+      administracao: item.administracao || "",
+      feedback: item.feedback || "",
+      local: item.local || ""
     });
   };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "Data inválida";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Data inválida";
+    return new Intl.DateTimeFormat('pt-PT', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    }).format(date);
   };
-
   const enrichedData = sortData(filterAndSearchData(data));
-
   const handleLogout = () => {
     // Static - just navigate
     router.push('/login');
   };
-
   const resetForm = () => {
-    setFormData({ data: "", hora: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
+    setFormData({ data: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
   };
-
   return (
     <>
       {/* Header - matches other dash pages */}
@@ -258,7 +253,6 @@ const [showPopup, setShowPopup] = useState(false);
             >
               <img src="/croa.png" alt="CROA Olhão" className="w-auto h-[60px] md:h-[80px] object-contain drop-shadow-md" />
             </motion.div>
-
             <div className="flex items-center gap-6">
               <motion.div className="relative group hidden md:block" whileHover={{ scale: 1.02 }}>
                 <motion.input
@@ -271,7 +265,6 @@ const [showPopup, setShowPopup] = useState(false);
                 />
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white group-focus-within:text-orange-500 transition-colors" size={16} />
               </motion.div>
-
               <motion.nav className="flex space-x-6 text-white text-lg font-medium items-center" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
                 {[{ name: "Inicio", href: "/" }, { name: "Quem somos?", href: "/aboutus" }, { name: "Dashboard", href: "/dashboard" }].map((link) => (
                   <Link key={link.name} href={link.href} className="relative group px-2 py-1">
@@ -306,7 +299,6 @@ const [showPopup, setShowPopup] = useState(false);
           </div>
         </motion.div>
       </header>
-
       <div className="min-h-screen bg-gray-50">
         <main className="p-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -333,7 +325,6 @@ const [showPopup, setShowPopup] = useState(false);
                       <div className="space-y-3 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <Input placeholder="Data (YYYY-MM-DD)" type="date" value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                          <Input placeholder="Hora (HH:MM)" type="time" value={formData.hora} onChange={(e) => setFormData({...formData, hora: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                           <Input placeholder="Nome" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                           <Input placeholder="ID do Animal (opcional)" type="number" value={formData.animal} onChange={(e) => setFormData({...formData, animal: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                         </div>
@@ -348,7 +339,6 @@ const [showPopup, setShowPopup] = useState(false);
                     </DialogContent>
                   </Dialog>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -367,9 +357,6 @@ const [showPopup, setShowPopup] = useState(false);
                       </TableHead>
                       <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort('data')}>
                         <div className="flex items-center gap-1">Data{sortConfig?.key === 'data' && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === 'asc' ? 'rotate-180' : ''}`} />}</div>
-                      </TableHead>
-                      <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort('hora')}>
-                        <div className="flex items-center gap-1">Hora{sortConfig?.key === 'hora' && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === 'asc' ? 'rotate-180' : ''}`} />}</div>
                       </TableHead>
                       <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort('nome')}>
                         <div className="flex items-center gap-1">Nome{sortConfig?.key === 'nome' && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === 'asc' ? 'rotate-180' : ''}`} />}</div>
@@ -391,16 +378,15 @@ const [showPopup, setShowPopup] = useState(false);
                       <TableRow key={item.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50 cursor-pointer" onClick={() => setViewItem(item)}>
                         <TableCell className="pl-8 font-medium text-gray-600">#{item.id}</TableCell>
                         <TableCell className="text-gray-900 font-medium">{formatDate(item.data)}</TableCell>
-                        <TableCell className="text-gray-900">{item.hora}</TableCell>
                         <TableCell className="text-gray-900 font-medium">{item.nome}</TableCell>
                         <TableCell className="text-gray-700">{item.animal ? `#${item.animal}` : '-'}</TableCell>
-                        <TableCell title={item.motivo} className="text-gray-700 max-w-[200px] truncate">{item.motivo}</TableCell>
+title={item.motivo ?? undefined}
                         <TableCell className="text-gray-700">{item.local}</TableCell>
                         <TableCell className="text-right pr-8 space-x-2" onClick={(e) => e.stopPropagation()}>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => handleEdit(item)}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => handleEdit(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" onClick={(e) => { e.stopPropagation(); if (confirm('Tem a certeza que deseja eliminar este aconselhamento?')) handleDelete(item.id); }}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -421,7 +407,6 @@ const [showPopup, setShowPopup] = useState(false);
             </Card>
           </motion.div>
         </main>
-
         {/* View Dialog */}
         <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
           <DialogContent className="rounded-2xl max-w-2xl">
@@ -431,7 +416,6 @@ const [showPopup, setShowPopup] = useState(false);
             {viewItem && (
               <div className="space-y-6 py-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2"><label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</label><div className="text-xl font-bold text-gray-900">{formatDate(viewItem.data)} às {viewItem.hora}</div></div>
                   <div className="space-y-2"><label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome</label><div className="text-xl font-bold text-gray-900">{viewItem.nome}</div></div>
                   <div className="space-y-2"><label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Animal</label><div className="text-xl font-bold text-gray-900">{viewItem.animal ? `#${viewItem.animal}` : 'Geral'}</div></div>
                   <div className="space-y-2"><label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Local</label><div className="text-xl font-bold text-gray-900">{viewItem.local}</div></div>
@@ -449,7 +433,6 @@ const [showPopup, setShowPopup] = useState(false);
             )}
           </DialogContent>
         </Dialog>
-
         {/* Edit Dialog - reused with create via state */}
         {editItem && (
           <Dialog open={!!editItem} onOpenChange={() => { setEditItem(null); resetForm(); }}>
@@ -462,4 +445,3 @@ const [showPopup, setShowPopup] = useState(false);
     </>
   );
 }
-

@@ -1,7 +1,9 @@
-# TODO: Fix viewItem/setViewItem error - COMPLETED ✅
+# TODO: Fix Aconselhamento Date Issue - COMPLETED ✅
 
-## Steps completed:
-- [x] 1. Added missing `useState` for `viewItem` in app/dashdocumentos/aconselhamento/page.tsx
-- [x] 2. Verified fix via file contents (state now declared, references resolve)
-- [x] 3. Task complete
+## Steps:
+- [x] 1. Update app/dashdocumentos/aconselhamento/page.tsx with improved date validation and safe formatDate function
+- [x] 2. Update app/api/admin/aconselhamentos/route.ts with date validation and error handling
+- [x] 3. Test creation with valid and invalid dates
+- [x] 4. Verify table display after create/edit
+- [x] 5. Mark complete and attempt_completion
 
