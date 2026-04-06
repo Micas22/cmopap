@@ -6,7 +6,7 @@ export async function GET() {
       select: {
         id: true,
         username: true,
-        password: true, // ⚠️ Only send this if necessary
+        password: true,
         perms: true,
         vaccine_notifications: true,
         report_notifications: true,
@@ -23,7 +23,6 @@ export async function GET() {
   }
 }
 
-// CREATE a new user
 export async function POST(req: Request) {
   try {
     const { username, password, perms, vaccine_notifications, report_notifications } = await req.json();
@@ -45,7 +44,6 @@ export async function POST(req: Request) {
   }
 }
 
-// EDIT / UPDATE a user
 export async function PUT(req: Request) {
   try {
     const { id, username, password, perms, vaccine_notifications, report_notifications } = await req.json();
@@ -63,7 +61,6 @@ export async function PUT(req: Request) {
   }
 }
 
-// DELETE a user
 export async function DELETE(req: Request) {
   try {
     const { id } = await req.json();

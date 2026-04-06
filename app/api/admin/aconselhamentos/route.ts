@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       orderBy: { id: "desc" },
       take: limit ? Number(limit) : undefined,
       include: {
-        Animal: true // Optional: include animal details if needed
+        Animal: true
       }
     });
     return NextResponse.json(serializeBigInt(aconselhamentos));
@@ -49,7 +49,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate date format
     const date = new Date(data);
     if (isNaN(date.getTime()) || data.split('-').length !== 3) {
       return NextResponse.json(
@@ -58,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate animal if provided
+
     let animalId = null;
     if (animal) {
       const animalExists = await prisma.animal.findUnique({ where: { id: Number(animal) } });
@@ -102,7 +101,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    // Validate animal if provided/changed
     let animalId = null;
     if (animal !== undefined && animal !== null) {
       const animalExists = await prisma.animal.findUnique({ where: { id: Number(animal) } });

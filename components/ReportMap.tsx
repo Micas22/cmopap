@@ -5,7 +5,6 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useState } from "react";
 
-// Fix for default marker icons in Next.js/Leaflet
 const icon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
@@ -34,7 +33,7 @@ function LocationMarker({ onLocationSelect }: { onLocationSelect?: (lat: number,
 export default function ReportMap({ onLocationSelect }: { onLocationSelect?: (lat: number, lng: number) => void }) {
   return (
     <MapContainer
-      center={[37.0286, -7.8411]} // Olhão, Portugal
+      center={[37.0286, -7.8411]}
       zoom={13}
       style={{ height: "100%", width: "100%", borderRadius: "1.5rem" }}
     >

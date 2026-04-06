@@ -19,7 +19,7 @@ export default function UsersDashboard() {
   const [viewItem, setViewItem] = useState<any>(null);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [permsFilter, setPermsFilter] = useState<number | null>(null); // null = all, 0 = user, 1 = admin
+  const [permsFilter, setPermsFilter] = useState<number | null>(null);
   const [users, setUsers] = useState<{ id: number; username: string; password: string; perms: number }[]>([]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function UsersDashboard() {
   const filterAndSearchData = (data: typeof users) => {
     let filtered = [...data];
 
-    // Apply search filter
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((user) => 
@@ -62,7 +62,7 @@ export default function UsersDashboard() {
       );
     }
 
-    // Apply perms filter
+
     if (permsFilter !== null) {
       filtered = filtered.filter((user) => user.perms === permsFilter);
     }

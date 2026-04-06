@@ -54,7 +54,6 @@ export default function DashDocumentos() {
     if (title === "Registo de aconselhamentos") {
       router.push("/dashdocumentos/aconselhamento");
     } else {
-      // Static for now - show alert as placeholder
       alert(`Funcionalidade "${title}" - Em desenvolvimento. Em breve poderá gerar este documento!`);
     }
   };

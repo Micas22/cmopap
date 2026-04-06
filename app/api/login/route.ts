@@ -15,6 +15,5 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "Incorrect password" }), { status: 401 });
   }
 
-  // Return username so frontend can save it
   return new Response(JSON.stringify({ success: true, username: user.username, perms: user.perms }));
 }

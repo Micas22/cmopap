@@ -64,7 +64,6 @@ export default function AdminDashboard() {
           const data = await response.json();
           setAnimals(data);
 
-          // Check for upcoming vaccines (today or within 3 days)
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
@@ -92,7 +91,6 @@ export default function AdminDashboard() {
         if (response.ok) {
           const data = await response.json();
 
-          // Check for unresolved ocorrencias
           const unresolvedOcorrencias = data.filter((ocorrencia: any) => ocorrencia.data_resolucao == null);
 
           setOcorrenciaNotifications(unresolvedOcorrencias);
@@ -106,14 +104,13 @@ export default function AdminDashboard() {
     fetchOcorrenciasAndCheckUnresolved();
   }, []);
 
-  // Show vaccine popup only if notifications are enabled and there are vaccines
+
   useEffect(() => {
     if (vaccineNotifications.length > 0 && userVaccineNotifications) {
       setShowVaccinePopup(true);
     }
   }, [vaccineNotifications, userVaccineNotifications]);
 
-  // Show ocorrencia popup only if notifications are enabled and there are ocorrencias
   useEffect(() => {
     if (ocorrenciaNotifications.length > 0 && userReportNotifications) {
       setShowOcorrenciaPopup(true);
@@ -121,8 +118,8 @@ export default function AdminDashboard() {
   }, [ocorrenciaNotifications, userReportNotifications]);
 
   const handleLogout = () => {
-    localStorage.removeItem("username"); // remove stored username
-    router.push("/login"); // redirect to login page
+    localStorage.removeItem("username"); 
+    router.push("/login"); 
   };
 
   const updateNotification = async (type: 'vaccine' | 'report', value: boolean) => {

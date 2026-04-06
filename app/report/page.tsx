@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// Dynamic import for the map to avoid SSR issues
 const ReportMap = dynamic(() => import("@/components/ReportMap"), {
   ssr: false,
   loading: () => (
@@ -32,8 +31,8 @@ export default function ReportPage() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username"); // remove stored username
-    router.push("/login"); // redirect to login page
+    localStorage.removeItem("username");
+    router.push("/login"); 
   };
 
   const [formData, setFormData] = useState({
@@ -47,7 +46,6 @@ export default function ReportPage() {
 
   const handleLocationSelect = async (lat: number, lng: number) => {
     try {
-      // Simple reverse geocoding
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
       );
@@ -55,7 +53,6 @@ export default function ReportPage() {
       if (data && data.display_name) {
         setFormData((prev) => ({ ...prev, address: data.display_name }));
       } else {
-        // If geocoding fails, require manual address input
         alert("Não foi possível obter o endereço automaticamente. Por favor, insira o endereço manualmente.");
       }
     } catch (error) {
@@ -68,12 +65,11 @@ export default function ReportPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Map type to estado
     const estadoMap: { [key: string]: number } = {
-      type1: 0, // Animal Perdido
-      type2: 1, // Animal Ferido
-      type3: 2, // Abandono
-      type4: 3, // Outro
+      type1: 0, 
+      type2: 1, 
+      type3: 2, 
+      type4: 3, 
     };
 
     const estado = estadoMap[formData.type] || 0;

@@ -7,9 +7,7 @@ import path from "path";
 const regularFont = path.join(process.cwd(), "public/fonts/Roboto-Regular.ttf");
 const boldFont = path.join(process.cwd(), "public/fonts/Roboto-Bold.ttf");
 
-// helper to keep only last 10 history entries per stock
 async function trimHistory(stockId: number) {
-  // @ts-ignore generated on prisma generate
   const latest = await prisma.stockHistory.findMany({
     where: { stockId },
     orderBy: { datas: "desc" },
@@ -19,7 +17,6 @@ async function trimHistory(stockId: number) {
 
   const keepIds = latest.map((h: { id: number }) => h.id);
 
-  // @ts-ignore generated on prisma generate
   await prisma.stockHistory.deleteMany({
     where: {
       stockId,
@@ -28,7 +25,6 @@ async function trimHistory(stockId: number) {
   });
 }
 
-// GET all stocks (optionally with limit, ordered by newest first, or export as PDF)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -41,7 +37,6 @@ export async function GET(request: Request) {
     let whereClause: any = {};
     let orderBy: any = { id: "desc" };
 
-    // Handle IDs filter
     if (idsParam) {
       const ids = idsParam.split(",").map(id => Number(id.trim())).filter(id => !isNaN(id));
       if (ids.length > 0) {
@@ -49,7 +44,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Handle filters
     if (filtersParam) {
       try {
         const filters = JSON.parse(filtersParam);
@@ -63,8 +57,6 @@ export async function GET(request: Request) {
           whereClause.quantidade = { ...whereClause.quantidade, lte: Number(filters.quantityMax) };
         }
         if (filters.user) {
-          // Note: This assumes utilizador is a number, but we filter by username later
-          // For now, we'll handle this in JS after fetching
         }
         if (filters.dateFrom) {
           whereClause.datas = { ...whereClause.datas, gte: new Date(filters.dateFrom) };
@@ -77,7 +69,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Handle sort
     if (sortParam) {
       const [field, direction] = sortParam.split(":");
       if (field && (direction === "asc" || direction === "desc")) {
@@ -91,13 +82,12 @@ export async function GET(request: Request) {
       take: limit ? Number(limit) : undefined,
     });
 
-    // Additional filtering for user (since utilizador is ID, but filter is by username)
+
     if (filtersParam) {
       try {
         const filters = JSON.parse(filtersParam);
         if (filters.user) {
-          // Fetch all users to map usernames
-          // @ts-ignore generated on prisma generate
+
           const allUsers = await prisma.user.findMany();
           const userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.username]));
           stocks = stocks.filter(stock => {
@@ -111,7 +101,7 @@ export async function GET(request: Request) {
     }
 
 if (format === "pdf") {
-  // generate enhanced PDF table with current stocks using pdfkit
+
   const doc = new PDFDocument({
     margin: 50,
     font: null,
@@ -128,9 +118,9 @@ if (format === "pdf") {
     doc.on("error", reject);
   });
 
-  // Page setup with background
+
   doc.on("pageAdded", () => {
-    // Subtle background pattern (diagonal lines)
+
     doc.save();
     doc.strokeColor("#fed7aa").lineWidth(0.5);
     for (let i = 0; i < doc.page.width; i += 20) {
@@ -140,7 +130,7 @@ if (format === "pdf") {
     doc.restore();
   });
 
-  // Add logo
+
   const logoPath = path.join(process.cwd(), "public/croa.png");
   try {
     doc.image(logoPath, 50, 50, { width: 100 });
@@ -148,26 +138,26 @@ if (format === "pdf") {
     console.error("Logo not found:", e);
   }
 
-  // Custom header with total stocks count
+
   doc.font("Bold").fontSize(24).fillColor("#ea580c").text("Relatório de Stocks", 200, 60, { align: "center" });
   doc.fontSize(12).fillColor("#000").text(`Total de Stocks: ${stocks.length}`, 200, 85, { align: "center" });
 
-  // Add generation date
+
   doc.moveDown(1);
   doc.fontSize(10).fillColor("#ea580c").text(`Gerado em: ${new Date().toLocaleString("pt-PT")}`, { align: "center" });
   doc.moveDown();
 
-  // Fetch usernames for better display
+
   let userMap: Record<number, string> = {};
   try {
-    // @ts-ignore generated on prisma generate
+
     const allUsers = await prisma.user.findMany();
     userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.username]));
   } catch (e) {
     console.error("Error fetching users for PDF:", e);
   }
 
-  // Prepare table data
+
   const headers = ["ID", "Nome", "Quantidade", "Última Edição", "Utilizador"];
   const tableData = stocks.map((s) => [
     String(s.id),
@@ -177,16 +167,16 @@ if (format === "pdf") {
     userMap[s.utilizador] || `ID ${s.utilizador}`,
   ]);
 
-  // Enhanced table drawing function with orange/white theme
+
   const drawTable = (doc: any, headers: string[], rows: string[][]) => {
-    const pageWidth = doc.page.width - 100; // margins
+    const pageWidth = doc.page.width - 100; 
     const colWidth = pageWidth / headers.length;
     let y = doc.y;
 
-    // Header background with gradient approximation (solid orange)
+
     doc.rect(50, y - 5, pageWidth, 25).fill("#ea580c");
 
-    // Headers
+
     doc.fillColor("#fff").font("Bold").fontSize(12);
     headers.forEach((header, i) => {
       doc.text(header, 50 + i * colWidth, y, {
@@ -198,7 +188,7 @@ if (format === "pdf") {
     y += 20;
     doc.moveTo(50, y).lineTo(50 + pageWidth, y).stroke("#fff");
 
-    // Rows
+
     doc.font("Regular").fontSize(10);
     rows.forEach((row, rowIndex) => {
       y += 25;
@@ -208,7 +198,7 @@ if (format === "pdf") {
         y = 50;
       }
 
-      // Alternating row background (white and light orange)
+
       if (rowIndex % 2 === 0) {
         doc.rect(50, y - 5, pageWidth, 20).fill("#fff");
       } else {
@@ -223,24 +213,24 @@ if (format === "pdf") {
         });
       });
 
-      // Row border
+
       doc.moveTo(50, y + 15).lineTo(50 + pageWidth, y + 15).stroke("#ea580c");
     });
 
-    // Table border
+
     doc.rect(50, doc.y - rows.length * 25 - 25, pageWidth, rows.length * 25 + 25).stroke("#ea580c");
   };
 
   drawTable(doc, headers, tableData);
 
-  // Add footer with page numbers
+
   const totalPages = doc.bufferedPageRange().count;
   for (let i = 0; i < totalPages; i++) {
     doc.switchToPage(i);
     doc.fontSize(8).fillColor("#ea580c").text(`Página ${i + 1} de ${totalPages}`, 50, doc.page.height - 50, { align: "center" });
   }
 
-  // Subtle watermark
+
   doc.save();
   doc.opacity(0.1);
   doc.fontSize(50).fillColor("#ea580c").text("CMO Animais", 100, doc.page.height / 2, { align: "center" });
@@ -260,7 +250,7 @@ if (format === "pdf") {
 }
 
 
-    // attach last 10 history entries per stock without using relations
+
     const stockIds = stocks.map((s) => s.id);
 
     let historyByStock: Record<
@@ -269,7 +259,7 @@ if (format === "pdf") {
     > = {};
 
     if (stockIds.length > 0) {
-      // @ts-ignore generated on prisma generate
+
       const allHistory = await prisma.stockHistory.findMany({
         where: { stockId: { in: stockIds } },
         orderBy: { datas: "desc" },
@@ -299,7 +289,7 @@ if (format === "pdf") {
 }
 }
 
-// CREATE a new stock entry
+
 export async function POST(request: Request) {
   try {
     const { nome, quantidade, utilizador } = await request.json();
@@ -324,13 +314,11 @@ export async function POST(request: Request) {
       data: {
         nome: nome.trim(),
         quantidade: Number(quantidade),
-        datas: new Date(), // data da criação/edição automática
+        datas: new Date(), 
         utilizador: Number(utilizador),
       },
     });
 
-    // create history entry
-    // @ts-ignore generated on prisma generate
     await prisma.stockHistory.create({
       data: {
         stockId: newStock.id,
@@ -352,7 +340,6 @@ export async function POST(request: Request) {
   }
 }
 
-// UPDATE an existing stock entry
 export async function PUT(request: Request) {
   try {
     const { id, nome, quantidade, utilizador } = await request.json();
@@ -393,7 +380,6 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Sempre atualiza data e utilizador na edição
     updateData.datas = new Date();
     updateData.utilizador = Number(utilizador);
 
@@ -402,8 +388,6 @@ export async function PUT(request: Request) {
       data: updateData,
     });
 
-    // create history entry
-    // @ts-ignore generated on prisma generate
     await prisma.stockHistory.create({
       data: {
         stockId: updatedStock.id,
@@ -425,7 +409,6 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE a stock entry
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();

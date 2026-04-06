@@ -25,7 +25,7 @@ type Stock = {
   id: number;
   nome: string;
   quantidade: number;
-  datas: string; // ISO string from API
+  datas: string;
   utilizador: number;
   StockHistory?: StockHistory[];
 };
@@ -276,16 +276,7 @@ export default function StocksDashboard() {
     }
   };
 
-  const formatDate = (iso: string) => {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "-";
-    return d.toLocaleDateString("pt-PT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
+
 
   const enrichedData = sortData(filterAndSearchData(stocks));
 
@@ -701,7 +692,7 @@ export default function StocksDashboard() {
                         <TableCell className="pl-8 font-medium text-gray-600">#{s.id}</TableCell>
                         <TableCell className="font-medium text-gray-900">{s.nome}</TableCell>
                         <TableCell className="text-gray-700">{s.quantidade}</TableCell>
-                        <TableCell className="text-gray-500">{formatDate(s.datas)}</TableCell>
+{s.datas || '-'}
                         <TableCell className="text-gray-700">
                           {userMap[s.utilizador] ?? `ID ${s.utilizador}`}
                         </TableCell>
@@ -772,7 +763,7 @@ export default function StocksDashboard() {
 
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Última edição</label>
-                    <div className="text-lg font-medium text-gray-900">{formatDate(viewItem.datas)}</div>
+{viewItem.datas || '-'}
                   </div>
 
                   <div className="space-y-1">
@@ -801,7 +792,7 @@ export default function StocksDashboard() {
                           {viewItem.StockHistory.map((h) => (
                             <TableRow key={h.id}>
                               <TableCell className="text-xs text-gray-700">
-                                {formatDate(h.datas)}
+{h.datas || '-'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
                                 {userMap[h.utilizador] ?? `ID ${h.utilizador}`}

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-// Type for Aconselhamento (API returns BigInt id as string/number)
 type Aconselhamento = {
   id: string | number;
   data: string;
@@ -36,7 +35,6 @@ export default function AconselhamentosPage() {
   const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("Admin");
   const router = useRouter();
-  // Form state for create/edit
   const [formData, setFormData] = useState({
     data: "",
     nome: "",
@@ -92,14 +90,11 @@ export default function AconselhamentosPage() {
     return [...items].sort((a, b) => {
       let valA = a[sortConfig.key];
       let valB = b[sortConfig.key];
-      // Handle null/undefined
       if (valA == null) return 1;
       if (valB == null) return -1;
-      // Handle numbers
       if (typeof valA === 'number' && typeof valB === 'number') {
         return sortConfig.direction === "asc" ? valA - valB : valB - valA;
       }
-      // Handle strings
       const strA = String(valA).toLowerCase();
       const strB = String(valB).toLowerCase();
       if (strA < strB) return sortConfig.direction === "asc" ? -1 : 1;
@@ -108,7 +103,6 @@ export default function AconselhamentosPage() {
     });
   };
   const handleCreate = async () => {
-    // Validate date
     if (!formData.data || isNaN(new Date(formData.data).getTime())) {
       alert("Por favor, insira uma data válida (YYYY-MM-DD)");
       return;
@@ -135,7 +129,6 @@ export default function AconselhamentosPage() {
         alert(`Erro ao criar: ${error.error}`);
         return;
       }
-      // Refetch
       await fetchAconselhamentos();
       setFormData({ data: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
       setCreateDialogOpen(false);
@@ -146,8 +139,6 @@ export default function AconselhamentosPage() {
   };
   const handleSaveEdit = async () => {
     if (!editItem) return;
-
-    // Validate date
     if (!formData.data || isNaN(new Date(formData.data).getTime())) {
       alert("Por favor, insira uma data válida (YYYY-MM-DD)");
       return;
@@ -175,7 +166,6 @@ export default function AconselhamentosPage() {
         alert(`Erro ao atualizar: ${error.error}`);
         return;
       }
-      // Refetch
       await fetchAconselhamentos();
       setEditItem(null);
       setFormData({ data: "", nome: "", animal: "", motivo: "", administracao: "", feedback: "", local: "" });
@@ -198,7 +188,6 @@ export default function AconselhamentosPage() {
         alert(`Erro ao eliminar: ${error.error}`);
         return;
       }
-      // Refetch
       await fetchAconselhamentos();
     } catch (error) {
       console.error("Delete error:", error);
@@ -206,9 +195,10 @@ export default function AconselhamentosPage() {
     }
   };
   const handleEdit = (item: Aconselhamento) => {
+    const dateValue = item.data || (item as any).date;
     setEditItem(item);
     setFormData({
-      data: item.data || "",
+      data: dateValue ? new Date(dateValue).toISOString().split('T')[0] : "",
       nome: item.nome || "",
       animal: item.animal?.toString() || "",
       motivo: item.motivo || "",
@@ -217,10 +207,14 @@ export default function AconselhamentosPage() {
       local: item.local || ""
     });
   };
-const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "Data inválida";
-    const date = new Date(dateStr);
+  const formatDate = (dateValue?: string | Date) => {
+    if (!dateValue) return "Sem data";
+    
+    // Ensure we have a valid Date object
+    const date = new Date(dateValue);
+    
     if (isNaN(date.getTime())) return "Data inválida";
+    
     return new Intl.DateTimeFormat('pt-PT', { 
       day: '2-digit', 
       month: '2-digit', 
@@ -229,7 +223,6 @@ const formatDate = (dateStr?: string) => {
   };
   const enrichedData = sortData(filterAndSearchData(data));
   const handleLogout = () => {
-    // Static - just navigate
     router.push('/login');
   };
   const resetForm = () => {
@@ -377,10 +370,12 @@ const formatDate = (dateStr?: string) => {
                     {enrichedData.map((item) => (
                       <TableRow key={item.id} className="group hover:bg-orange-50/30 transition-colors border-gray-50 cursor-pointer" onClick={() => setViewItem(item)}>
                         <TableCell className="pl-8 font-medium text-gray-600">#{item.id}</TableCell>
-                        <TableCell className="text-gray-900 font-medium">{formatDate(item.data)}</TableCell>
+                        <TableCell className="text-gray-900 font-medium">{formatDate(item.data || (item as any).date)}</TableCell>
                         <TableCell className="text-gray-900 font-medium">{item.nome}</TableCell>
                         <TableCell className="text-gray-700">{item.animal ? `#${item.animal}` : '-'}</TableCell>
-title={item.motivo ?? undefined}
+                        <TableCell className="text-gray-700 max-w-[200px] truncate" title={item.motivo ?? undefined}>
+                          {item.motivo}
+                        </TableCell>
                         <TableCell className="text-gray-700">{item.local}</TableCell>
                         <TableCell className="text-right pr-8 space-x-2" onClick={(e) => e.stopPropagation()}>
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => handleEdit(item)}>

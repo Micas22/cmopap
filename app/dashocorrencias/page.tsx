@@ -8,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-
-// Dynamic import for the map to avoid SSR issues
 const ReportMap = dynamic(() => import("@/components/ReportMap"), {
   ssr: false,
   loading: () => (
@@ -63,7 +61,7 @@ export default function DashOcorrencias() {
         body: JSON.stringify({
           id,
           data_resolucao: new Date().toISOString(),
-          estado: 1, // Resolved
+          estado: 1,
         }),
       });
       fetchOcorrencias();
@@ -109,8 +107,8 @@ export default function DashOcorrencias() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("username"); // remove stored username
-    router.push("/login"); // redirect to login page
+    localStorage.removeItem("username");
+    router.push("/login");
   };
 
   if (isLoading) {

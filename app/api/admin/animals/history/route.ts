@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-// GET - Fetch animal history by animalId
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       orderBy: { created_at: "desc" },
     });
 
-    // Convert BigInt to string for JSON serialization
+
     const serializedHistory = history.map((item) => ({
       ...item,
       id: item.id.toString(),
@@ -38,7 +38,6 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Create new animal history event
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -78,7 +77,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // Convert BigInt to string for JSON serialization
     const serializedHistory = {
       ...newHistory,
       id: newHistory.id.toString(),
@@ -95,7 +93,7 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Update animal history event
+
 export async function PUT(request: Request) {
   try {
     const formData = await request.formData();
@@ -117,7 +115,7 @@ export async function PUT(request: Request) {
       titulo,
     };
 
-    // Handle file upload
+
     if (ficheiro && ficheiro.size > 0) {
       const bytes = await ficheiro.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -139,7 +137,7 @@ export async function PUT(request: Request) {
       data,
     });
 
-    // Convert BigInt to string for JSON serialization
+
     const serializedHistory = {
       ...updatedHistory,
       id: updatedHistory.id.toString(),
@@ -156,7 +154,7 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE - Delete animal history event
+
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();

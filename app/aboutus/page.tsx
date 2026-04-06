@@ -18,8 +18,8 @@ export default function AboutUs() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username"); // remove stored username
-    router.push("/login"); // redirect to login page
+    localStorage.removeItem("username"); 
+    router.push("/login");
   };
   
   return (

@@ -1,9 +1,1 @@
-# TODO: Fix Aconselhamento Date Issue - COMPLETED ✅
-
-## Steps:
-- [x] 1. Update app/dashdocumentos/aconselhamento/page.tsx with improved date validation and safe formatDate function
-- [x] 2. Update app/api/admin/aconselhamentos/route.ts with date validation and error handling
-- [x] 3. Test creation with valid and invalid dates
-- [x] 4. Verify table display after create/edit
-- [x] 5. Mark complete and attempt_completion
-
+# Date Formatting Cleanse - Aconselhamento Table\n\n## Plan Status: ✅ COMPLETED\n\n### Steps:\n\n✅ **1. Create TODO.md** - Track progress\n\n✅ **2. Edit app/dashdocumentos/aconselhamento/page.tsx**\n   - Removed `formatDate(item.data)` → `{item.data}` in table cell\n   - Removed unused `formatDate` function\n\n✅ **3. Verify changes**\n   - Table shows raw DB dates (ISO format like \"2024-10-08T10:30:00.000Z\")\n   - Form validation preserved\n   - Sorting/search unaffected\n\n✅ **4. Test table**\n   - Dev server: http://localhost:3001\n   - /dashdocumentos/aconselhamento → raw dates confirmed\n\n✅ **5. Complete task**\n\n## Notes:\n- Scoped to aconselhamento table only (user-approved minimal)\n- Prisma DateTime → raw ISO strings\n- Forms keep `new Date()` validation\n\n**Result:** Table dates now display exactly as stored in database.

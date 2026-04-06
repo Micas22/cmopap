@@ -18,7 +18,7 @@ interface Shelter {
   contact: string;
 }
 
-// Custom animated marker icon for shelters
+
 const customIcon = L.divIcon({
   className: "custom-marker",
   html: `<div class="marker-inner relative flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out origin-center">
@@ -32,7 +32,7 @@ const customIcon = L.divIcon({
   popupAnchor: [0, -24],
 });
 
-// Temporary marker icon for selected location
+
 const tempIcon = L.divIcon({
   className: "temp-marker",
   html: `<div class="marker-inner relative flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out origin-center">

@@ -93,7 +93,6 @@ export default function AdminDashboard() {
     });
   };
 
-  // Helper function to get arquivos as array
   const getArquivosArray = (arquivos: string | null | undefined): string[] => {
     if (!arquivos) return [];
     return arquivos.split(",").filter(f => f.trim());
@@ -101,7 +100,6 @@ export default function AdminDashboard() {
 
 const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
 
-  // Animal History State
   const [animalHistory, setAnimalHistory] = useState<{ id: string; titulo: string; ficheiro?: string; created_at: string }[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [viewTab, setViewTab] = useState<"details" | "history">("details");
@@ -112,7 +110,6 @@ const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const [editHistoryFicheiro, setEditHistoryFicheiro] = useState<File | null>(null);
   const [historyToDelete, setHistoryToDelete] = useState<string | null>(null);
 
-  // Fetch animal history
   const fetchAnimalHistory = async (animalId: number) => {
     setIsLoadingHistory(true);
     try {
@@ -128,14 +125,12 @@ const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
     }
   };
 
-  // Handle view animal - fetch history too
   const handleViewAnimal = async (animal: any) => {
     setViewItem({ ...animal });
     setViewTab("details");
     await fetchAnimalHistory(animal.id);
   };
 
-  // Create history event
   const handleCreateHistory = async () => {
     if (!newHistoryTitulo || !viewItem) return;
     try {
@@ -168,7 +163,6 @@ const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
     }
   };
 
-  // Update history event
   const handleUpdateHistory = async () => {
     if (!editHistoryItem || !editHistoryItem.titulo) return;
     try {
@@ -205,7 +199,6 @@ const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
     }
   };
 
-  // Delete history event
   const handleDeleteHistory = async () => {
     if (!historyToDelete) return;
     try {
@@ -253,17 +246,14 @@ const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
       if (editItem.deleteImage) {
         formData.append("deleteImage", "true");
       }
-      // Handle arquivos - append new files if any
       if (editArquivosFile && editArquivosFile.length > 0) {
         editArquivosFile.forEach((file: File) => {
           formData.append("arquivos", file);
         });
       }
-      // Handle files to remove
       if (filesToRemove.length > 0) {
         formData.append("filesToRemove", filesToRemove.join(","));
       }
-      // Handle clear all arquivos
       if (editItem.clearArquivos) {
         formData.append("clearArquivos", "true");
       }

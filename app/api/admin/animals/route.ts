@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       imagePath = `/uploads/${filename}`;
     }
 
-    // Handle multiple file uploads for arquivos - store as comma-separated paths
+
     let arquivosPath = null;
     if (arquivos && arquivos.length > 0) {
       const uploadDir = path.join(process.cwd(), "public/uploads");
@@ -162,7 +162,7 @@ export async function PUT(request: Request) {
     if (data_ultima_vacina) data.data_ultima_vacina = new Date(data_ultima_vacina);
     if (data_proxima_vacina) data.data_proxima_vacina = new Date(data_proxima_vacina);
 
-    // Handle image upload
+
     if (image) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -177,7 +177,7 @@ export async function PUT(request: Request) {
       data.image = `/uploads/${filename}`;
     }
 
-    // Handle arquivos (multiple documents) upload - append to existing or create new
+
     const arquivosFiles = formData.getAll("arquivos") as File[];
     const filesToRemove = formData.get("filesToRemove") as string | null;
     const clearArquivos = formData.get("clearArquivos") as string | null;
@@ -189,7 +189,7 @@ export async function PUT(request: Request) {
         await mkdir(uploadDir, { recursive: true });
       } catch (e) {}
 
-      // Get existing arquivos to append to
+
       const existingAnimal = await prisma.animal.findUnique({
         where: { id },
         select: { arquivos: true }
@@ -206,11 +206,11 @@ export async function PUT(request: Request) {
         newArquivos.push(`/uploads/${filename}`);
       }
 
-      // Combine existing and new arquivos
+
       const allArquivos = [...existingArquivos, ...newArquivos];
       data.arquivos = allArquivos.join(",");
     } else if (filesToRemove) {
-      // Handle removal of specific files
+
       const existingAnimal = await prisma.animal.findUnique({
         where: { id },
         select: { arquivos: true }
@@ -223,7 +223,7 @@ export async function PUT(request: Request) {
         data.arquivos = filteredArquivos.length > 0 ? filteredArquivos.join(",") : null;
       }
     } else if (clearArquivos === "true") {
-      // Handle clearing all arquivos
+
       data.arquivos = null;
     }
 
