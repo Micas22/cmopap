@@ -18,6 +18,12 @@
 /.next/
 /out/
 
+# environment
+.env
+.env.local
+.env.production
+.env.development
+
 # production
 /build
 

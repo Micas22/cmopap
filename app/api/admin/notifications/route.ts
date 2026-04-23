@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId: parseInt(userId) },
+      where: { userId: parseInt(userId, 10) },
       orderBy: { dataAndTime: 'desc' },
     });
     return NextResponse.json(notifications);
