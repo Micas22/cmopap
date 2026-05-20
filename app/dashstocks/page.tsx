@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Header from "@/components/Header";
 
 type StockHistory = {
   id: number;
@@ -282,105 +283,7 @@ export default function StocksDashboard() {
 
   return (
     <>
-      <header className="w-full shadow-xl z-50 relative font-sans">
-        <motion.div
-          className="bg-gradient-to-r from-orange-600 to-amber-500 shadow-lg relative z-20"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="w-full px-6 py-4 flex items-center justify-between">
-            <motion.div
-              className="flex-shrink-0 bg-white/10 p-2 rounded-xl backdrop-blur-sm"
-              whileHover={{ scale: 1.05, rotate: -2 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <img src="/croa.png" alt="CROA Olhão" className="w-auto h-[60px] md:h-[80px] object-contain drop-shadow-md" />
-            </motion.div>
-
-            <div className="flex items-center gap-6">
-              <motion.div
-                className="relative group hidden md:block"
-                whileHover={{ scale: 1.02 }}
-              >
-                <motion.input
-                  type="text"
-                  placeholder="Pesquisar..."
-                  className="bg-white/20 border border-white/30 rounded-full pl-4 pr-10 py-2 text-sm text-white placeholder-white/70 focus:outline-none focus:bg-white focus:text-gray-800 focus:ring-2 focus:ring-orange-500/50 transition-all shadow-sm"
-                  initial={{ width: "180px" }}
-                  whileFocus={{ width: "240px" }}
-                  transition={{ duration: 0.3 }}
-                />
-                <Search
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white group-focus-within:text-orange-500 transition-colors"
-                  size={16}
-                />
-              </motion.div>
-
-              <motion.nav
-                className="flex space-x-6 text-white text-lg font-medium items-center"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-              >
-                {[{ name: "Inicio", href: "/" }, { name: "Quem somos?", href: "/aboutus" }, { name: "Dashboard", href: "/dashboard" }].map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="relative group px-2 py-1"
-                  >
-                    <span className="relative z-10">{link.name}</span>
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
-                    <span className="absolute inset-0 bg-white/10 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-200 -z-0" />
-                  </Link>
-                ))}
-
-                <div className="relative ml-2">
-                  <motion.button
-                    onClick={() => setShowPopup(!showPopup)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`p-1.5 rounded-full transition-all duration-300 ${showPopup ? "bg-white text-orange-500 shadow-lg" : "bg-white/20 text-white hover:bg-white/30"}`}
-                  >
-                    <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/20">
-                      <img src="/user.png" alt="User" className="w-full h-full object-cover" />
-                    </div>
-                  </motion.button>
-
-                  <AnimatePresence>
-                    {showPopup && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 origin-top-right"
-                      >
-                        <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
-                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
-                            {username ? username.charAt(0).toUpperCase() : "U"}
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Logged in as</p>
-                            <p className="text-gray-800 font-semibold truncate max-w-[140px]">{username || "Guest"}</p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={handleLogout}
-                          className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                        >
-                          <span>Sair</span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.nav>
-            </div>
-          </div>
-        </motion.div>
-      </header>
+      <Header />
 
       <div className="min-h-screen bg-gray-50">
         <main className="p-10">
@@ -692,7 +595,7 @@ export default function StocksDashboard() {
                         <TableCell className="pl-8 font-medium text-gray-600">#{s.id}</TableCell>
                         <TableCell className="font-medium text-gray-900">{s.nome}</TableCell>
                         <TableCell className="text-gray-700">{s.quantidade}</TableCell>
-{s.datas || '-'}
+                        {s.datas || '-'}
                         <TableCell className="text-gray-700">
                           {userMap[s.utilizador] ?? `ID ${s.utilizador}`}
                         </TableCell>
@@ -763,7 +666,7 @@ export default function StocksDashboard() {
 
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Última edição</label>
-{viewItem.datas || '-'}
+                    {viewItem.datas || '-'}
                   </div>
 
                   <div className="space-y-1">
@@ -785,14 +688,14 @@ export default function StocksDashboard() {
                           <TableRow>
                             <TableHead className="text-xs">Data</TableHead>
                             <TableHead className="text-xs">Utilizador</TableHead>
-                                                     <TableHead className="text-xs">Quantidade</TableHead>
+                            <TableHead className="text-xs">Quantidade</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {viewItem.StockHistory.map((h) => (
                             <TableRow key={h.id}>
                               <TableCell className="text-xs text-gray-700">
-{h.datas || '-'}
+                                {h.datas || '-'}
                               </TableCell>
                               <TableCell className="text-xs text-gray-700">
                                 {userMap[h.utilizador] ?? `ID ${h.utilizador}`}

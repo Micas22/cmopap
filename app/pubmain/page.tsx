@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, animate, useInView, AnimatePresen
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Header from "@/components/Header";
 
 const ShelterMap = dynamic(() => import("@/components/ShelterMap"), {
   ssr: false,
@@ -57,7 +58,7 @@ const StatCard = ({ img, title, index }: { img: string; title: string; index: nu
 
 export default function Header() {
 
-    const [showPopup, setShowPopup] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("");
   const router = useRouter();
   const [recentAnimals, setRecentAnimals] = useState<any[]>([]);
@@ -88,114 +89,10 @@ export default function Header() {
     localStorage.removeItem("username");
     router.push("/login");
   };
-  
+
   return (
     <>
-    <header className="w-full shadow-xl z-50 relative font-sans">
-      {/* Main Header - Consolidated */}
-      <motion.div
-        className="bg-gradient-to-r from-orange-600 to-amber-500 shadow-lg relative z-20"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="w-full px-6 py-4 flex items-center justify-between">
-          {/* Logo */}
-          <motion.div
-            className="flex-shrink-0 bg-white/10 p-2 rounded-xl backdrop-blur-sm"
-            whileHover={{ scale: 1.05, rotate: -2 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <img src="/croa.png" alt="CROA Olhão" className="w-auto h-[60px] md:h-[80px] object-contain drop-shadow-md" />
-          </motion.div>
-
-          <div className="flex items-center gap-6">
-            {/* Search Bar - Integrated */}
-            <motion.div
-              className="relative group hidden md:block"
-              whileHover={{ scale: 1.02 }}
-            >
-              <motion.input
-                type="text"
-                placeholder="Pesquisar..."
-                className="bg-white/20 border border-white/30 rounded-full pl-4 pr-10 py-2 text-sm text-white placeholder-white/70 focus:outline-none focus:bg-white focus:text-gray-800 focus:ring-2 focus:ring-orange-500/50 transition-all shadow-sm"
-                initial={{ width: "180px" }}
-                whileFocus={{ width: "240px" }}
-                transition={{ duration: 0.3 }}
-              />
-              <Search
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white group-focus-within:text-orange-500 transition-colors"
-                size={16}
-              />
-            </motion.div>
-
-            {/* Navigation */}
-            <motion.nav
-              className="flex space-x-6 text-white text-lg font-medium items-center"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-            >
-              {[{ name: "Inicio", href: "/" }, { name: "Quem somos?", href: "/aboutus" }, { name: "Report", href: "/report" }].map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="relative group px-2 py-1"
-                >
-                  <span className="relative z-10">{link.name}</span>
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
-                  <span className="absolute inset-0 bg-white/10 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-200 -z-0" />
-                </Link>
-              ))}
-
-              {/* User Profile */}
-              <div className="relative ml-2">
-                <motion.button
-                  onClick={() => setShowPopup(!showPopup)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`p-1.5 rounded-full transition-all duration-300 ${showPopup ? 'bg-white text-orange-500 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                >
-                  <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/20">
-                     <img src="/user.png" alt="User" className="w-full h-full object-cover" />
-                  </div>
-                </motion.button>
-
-                {/* Popup */}
-                <AnimatePresence>
-                  {showPopup && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 origin-top-right"
-                    >
-                      <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
-                          {username ? username.charAt(0).toUpperCase() : "U"}
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Logged in as</p>
-                          <p className="text-gray-800 font-semibold truncate max-w-[140px]">{username || "Guest"}</p>
-                        </div>
-                      </div>
-                      
-                      <button
-                        onClick={handleLogout}
-                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <span>Sair</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.nav>
-          </div>
-        </div>
-      </motion.div>
-    </header>
+      <Header />
 
 
 
@@ -214,15 +111,15 @@ export default function Header() {
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
-          {[
-            ["ativo1.png", "Residentes"],
-            ["ativo4.png", "Em Colónias"],
-            ["ativo5.png", "Esterilizados"],
-            ["ativo6.png", "Errantes"],
-            ["ativo7.png", "Acolhimento"],
-          ].map(([img, title], i) => (
-            <StatCard key={i} img={img} title={title} index={i} />
-          ))}
+            {[
+              ["ativo1.png", "Residentes"],
+              ["ativo4.png", "Em Colónias"],
+              ["ativo5.png", "Esterilizados"],
+              ["ativo6.png", "Errantes"],
+              ["ativo7.png", "Acolhimento"],
+            ].map(([img, title], i) => (
+              <StatCard key={i} img={img} title={title} index={i} />
+            ))}
           </div>
         </div>
       </motion.section>
@@ -301,10 +198,10 @@ export default function Header() {
                   <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-full group-hover:bg-orange-50 group-hover:text-orange-400 transition-colors">
                     {pet.createdAt ? new Date(pet.createdAt).toLocaleDateString('pt-PT') : 'Recente'}
                   </span>
-                  <img 
-                    src={pet.sex === 1 ? "/male.png" : "/female.png"} 
-                    alt="sex" 
-                    className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" 
+                  <img
+                    src={pet.sex === 1 ? "/male.png" : "/female.png"}
+                    alt="sex"
+                    className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity"
                   />
                 </div>
               </div>
@@ -431,27 +328,27 @@ export default function Header() {
               >
                 <X size={20} />
               </button>
-              
+
               <div className="h-80 relative">
-                 <img
+                <img
                   src={selectedAnimal.image || "/placeholder.png"}
                   alt={selectedAnimal.nome}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 w-full p-8 text-white">
-                    <h3 className="text-4xl font-bold mb-2">{selectedAnimal.nome}</h3>
-                    <div className="flex items-center gap-3 text-white/90 text-base font-medium">
-                        <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">{selectedAnimal.sex === 1 ? "Macho" : "Fêmea"}</span>
-                        <span>#{selectedAnimal.id}</span>
-                    </div>
+                  <h3 className="text-4xl font-bold mb-2">{selectedAnimal.nome}</h3>
+                  <div className="flex items-center gap-3 text-white/90 text-base font-medium">
+                    <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">{selectedAnimal.sex === 1 ? "Macho" : "Fêmea"}</span>
+                    <span>#{selectedAnimal.id}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="p-8 space-y-6">
                 <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Número do Chip</p>
-                    <p className="font-mono text-gray-800 font-bold text-xl tracking-wide">{selectedAnimal.chip}</p>
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Número do Chip</p>
+                  <p className="font-mono text-gray-800 font-bold text-xl tracking-wide">{selectedAnimal.chip}</p>
                 </div>
               </div>
 

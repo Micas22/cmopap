@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Header from "@/components/Header";
+
 const ReportMap = dynamic(() => import("@/components/ReportMap"), {
   ssr: false,
   loading: () => (
@@ -140,87 +142,7 @@ export default function DashOcorrencias() {
   if (ocorrencias.length === 0) {
     return (
       <>
-        <header className="w-full shadow-xl z-50 relative font-sans">
-          <motion.div
-            className="bg-gradient-to-r from-orange-600 to-amber-500 shadow-lg relative z-20"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="w-full px-6 py-4 flex items-center justify-between">
-              <motion.div
-                className="flex-shrink-0 bg-white/10 p-2 rounded-xl backdrop-blur-sm"
-                whileHover={{ scale: 1.05, rotate: -2 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <img src="/croa.png" alt="CROA Olhão" className="w-auto h-[60px] md:h-[80px] object-contain drop-shadow-md" />
-              </motion.div>
-
-              <div className="flex items-center gap-6">
-                <motion.nav
-                  className="flex space-x-6 text-white text-lg font-medium items-center"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                >
-                  {[{ name: "Inicio", href: "/" }, { name: "Quem somos?", href: "/aboutus" }, { name: "Dashboard", href: "/dashboard" }].map((link) => (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className="relative group px-2 py-1"
-                    >
-                      <span className="relative z-10">{link.name}</span>
-                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
-                      <span className="absolute inset-0 bg-white/10 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-200 -z-0" />
-                    </Link>
-                  ))}
-
-                  <div className="relative ml-2">
-                    <motion.button
-                      onClick={() => setShowPopup(!showPopup)}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`p-1.5 rounded-full transition-all duration-300 ${showPopup ? 'bg-white text-orange-500 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                    >
-                      <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/20">
-                         <img src="/user.png" alt="User" className="w-full h-full object-cover" />
-                      </div>
-                    </motion.button>
-
-                    <AnimatePresence>
-                      {showPopup && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 origin-top-right"
-                        >
-                          <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
-                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
-                              {username ? username.charAt(0).toUpperCase() : "U"}
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Logged in as</p>
-                              <p className="text-gray-800 font-semibold truncate max-w-[140px]">{username || "Guest"}</p>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={handleLogout}
-                            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                          >
-                            <span>Sair</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.nav>
-              </div>
-            </div>
-          </motion.div>
-        </header>
+        <Header />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -282,7 +204,7 @@ export default function DashOcorrencias() {
                     className={`p-1.5 rounded-full transition-all duration-300 ${showPopup ? 'bg-white text-orange-500 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
                   >
                     <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/20">
-                       <img src="/user.png" alt="User" className="w-full h-full object-cover" />
+                      <img src="/user.png" alt="User" className="w-full h-full object-cover" />
                     </div>
                   </motion.button>
 
@@ -359,9 +281,8 @@ export default function DashOcorrencias() {
                     <button
                       key={index}
                       onClick={() => setCurrentIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${
-                        index === currentIndex ? "bg-orange-500" : "bg-gray-300"
-                      }`}
+                      className={`w-3 h-3 rounded-full transition-colors ${index === currentIndex ? "bg-orange-500" : "bg-gray-300"
+                        }`}
                     />
                   ))}
                 </div>
@@ -481,7 +402,7 @@ export default function DashOcorrencias() {
 
             {/* Map Section */}
             <div className="h-[400px] lg:h-auto min-h-[400px] rounded-3xl overflow-hidden shadow-xl border border-gray-100 relative bg-white">
-              <ReportMap onLocationSelect={() => {}} />
+              <ReportMap onLocationSelect={() => { }} />
               <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 px-4 rounded-full shadow-sm z-[1000] text-xs font-medium text-gray-600 border border-gray-100">
                 📍 {currentOcorrencia.morada}
               </div>

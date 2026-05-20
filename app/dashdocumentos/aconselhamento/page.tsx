@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Header from "@/components/Header";
+
 type Aconselhamento = {
   id: string | number;
   data: string;
@@ -209,16 +211,16 @@ export default function AconselhamentosPage() {
   };
   const formatDate = (dateValue?: string | Date) => {
     if (!dateValue) return "Sem data";
-    
+
     // Ensure we have a valid Date object
     const date = new Date(dateValue);
-    
+
     if (isNaN(date.getTime())) return "Data inválida";
-    
-    return new Intl.DateTimeFormat('pt-PT', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
+
+    return new Intl.DateTimeFormat('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     }).format(date);
   };
   const enrichedData = sortData(filterAndSearchData(data));
@@ -230,68 +232,7 @@ export default function AconselhamentosPage() {
   };
   return (
     <>
-      {/* Header - matches other dash pages */}
-      <header className="w-full shadow-xl z-50 relative font-sans">
-        <motion.div
-          className="bg-gradient-to-r from-orange-600 to-amber-500 shadow-lg relative z-20"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="w-full px-6 py-4 flex items-center justify-between">
-            <motion.div
-              className="flex-shrink-0 bg-white/10 p-2 rounded-xl backdrop-blur-sm"
-              whileHover={{ scale: 1.05, rotate: -2 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <img src="/croa.png" alt="CROA Olhão" className="w-auto h-[60px] md:h-[80px] object-contain drop-shadow-md" />
-            </motion.div>
-            <div className="flex items-center gap-6">
-              <motion.div className="relative group hidden md:block" whileHover={{ scale: 1.02 }}>
-                <motion.input
-                  type="text"
-                  placeholder="Pesquisar..."
-                  className="bg-white/20 border border-white/30 rounded-full pl-4 pr-10 py-2 text-sm text-white placeholder-white/70 focus:outline-none focus:bg-white focus:text-gray-800 focus:ring-2 focus:ring-orange-500/50 transition-all shadow-sm"
-                  initial={{ width: "180px" }}
-                  whileFocus={{ width: "240px" }}
-                  transition={{ duration: 0.3 }}
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 group-hover:text-white group-focus-within:text-orange-500 transition-colors" size={16} />
-              </motion.div>
-              <motion.nav className="flex space-x-6 text-white text-lg font-medium items-center" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
-                {[{ name: "Inicio", href: "/" }, { name: "Quem somos?", href: "/aboutus" }, { name: "Dashboard", href: "/dashboard" }].map((link) => (
-                  <Link key={link.name} href={link.href} className="relative group px-2 py-1">
-                    <span className="relative z-10">{link.name}</span>
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
-                    <span className="absolute inset-0 bg-white/10 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-200 -z-0" />
-                  </Link>
-                ))}
-                <div className="relative ml-2">
-                  <motion.button onClick={() => setShowPopup(!showPopup)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className={`p-1.5 rounded-full transition-all duration-300 ${showPopup ? 'bg-white text-orange-500 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-                    <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/20">
-                      <img src="/user.png" alt="User" className="w-full h-full object-cover" />
-                    </div>
-                  </motion.button>
-                  <AnimatePresence>
-                    {showPopup && (
-                      <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.2 }} className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 origin-top-right">
-                        <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
-                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">{username.charAt(0).toUpperCase()}</div>
-                          <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold">Logged in as</p>
-                            <p className="text-gray-800 font-semibold truncate max-w-[140px]">{username}</p>
-                          </div>
-                        </div>
-                        <button onClick={handleLogout} className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">Sair</button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.nav>
-            </div>
-          </div>
-        </motion.div>
-      </header>
+      <Header />
       <div className="min-h-screen bg-gray-50">
         <main className="p-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -317,14 +258,14 @@ export default function AconselhamentosPage() {
                       </DialogHeader>
                       <div className="space-y-3 pt-2 max-h-[70vh] overflow-y-auto pr-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <Input placeholder="Data (YYYY-MM-DD)" type="date" value={formData.data} onChange={(e) => setFormData({...formData, data: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                          <Input placeholder="Nome" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                          <Input placeholder="ID do Animal (opcional)" type="number" value={formData.animal} onChange={(e) => setFormData({...formData, animal: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                          <Input placeholder="Data (YYYY-MM-DD)" type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                          <Input placeholder="Nome" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                          <Input placeholder="ID do Animal (opcional)" type="number" value={formData.animal} onChange={(e) => setFormData({ ...formData, animal: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                         </div>
-                        <Input placeholder="Motivo" value={formData.motivo} onChange={(e) => setFormData({...formData, motivo: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                        <Input placeholder="Administração" value={formData.administracao} onChange={(e) => setFormData({...formData, administracao: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                        <Input placeholder="Feedback" value={formData.feedback} onChange={(e) => setFormData({...formData, feedback: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
-                        <Input placeholder="Local" value={formData.local} onChange={(e) => setFormData({...formData, local: e.target.value})} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                        <Input placeholder="Motivo" value={formData.motivo} onChange={(e) => setFormData({ ...formData, motivo: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                        <Input placeholder="Administração" value={formData.administracao} onChange={(e) => setFormData({ ...formData, administracao: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                        <Input placeholder="Feedback" value={formData.feedback} onChange={(e) => setFormData({ ...formData, feedback: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+                        <Input placeholder="Local" value={formData.local} onChange={(e) => setFormData({ ...formData, local: e.target.value })} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                         <Button onClick={editItem ? handleSaveEdit : handleCreate} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl h-11 shadow-md font-semibold" disabled={!formData.nome || !formData.motivo || !formData.data}>
                           {editItem ? 'Guardar Alterações' : 'Criar'}
                         </Button>
@@ -378,7 +319,7 @@ export default function AconselhamentosPage() {
                         </TableCell>
                         <TableCell className="text-gray-700">{item.local}</TableCell>
                         <TableCell className="text-right pr-8 space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => handleEdit(item)}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onClick={() => handleEdit(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
