@@ -2,702 +2,589 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, PawPrint, Pencil, Trash2, Plus, ChevronDown, Check, Image as ImageIcon, ChevronLeft, ChevronRight, Package, Users as UsersIcon, X, FileText, Bell } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Users, PawPrint, ChevronLeft, ChevronRight, Package,
+  X, FileText, Bell, AlertTriangle, CheckCircle2, Clock,
+  Syringe, ShieldAlert, TrendingUp, ArrowRight, Settings,
+} from "lucide-react";
 import Header from "@/components/Header";
-
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+/* ────────────────────────────────────────────────────────── helpers */
+function diffDaysFromNow(dateStr: string) {
+  const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.ceil((d.getTime() - t.getTime()) / 86400000);
+}
+function urgency(days: number) {
+  if (days === 0) return { pill: "bg-red-100 text-red-600 border border-red-200", dot: "bg-red-500", label: "Hoje" };
+  if (days === 1) return { pill: "bg-orange-100 text-orange-600 border border-orange-200", dot: "bg-orange-500", label: "Amanhã" };
+  return { pill: "bg-yellow-100 text-yellow-700 border border-yellow-200", dot: "bg-yellow-400", label: `${days}d` };
+}
+const ESTADOS_TEXT = ["Animal Perdido", "Animal Ferido", "Abandono", "Outro"];
+const ESTADOS_PILL = [
+  "bg-blue-100 text-blue-700 border border-blue-200",
+  "bg-red-100 text-red-700 border border-red-200",
+  "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  "bg-gray-100 text-gray-600 border border-gray-200",
+];
 
+/* ────────────────────────────────────────────────────────── Toggle */
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${checked ? "bg-orange-500" : "bg-gray-200"
+        }`}
+    >
+      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`} />
+    </button>
+  );
+}
 
+/* ────────────────────────────────────────────────────────── Modal */
+function Modal({ open, onClose, icon: Icon, accent, title, subtitle, count, children }: {
+  open: boolean; onClose: () => void; icon: React.ElementType;
+  accent: string; title: string; subtitle: string; count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center sm:p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white w-full sm:max-w-xl sm:rounded-3xl rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col overflow-hidden"
+          >
+            <div className={`${accent} p-5 flex items-center justify-between flex-shrink-0`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-white font-bold text-base leading-tight">{title}</h2>
+                  <p className="text-white/65 text-xs mt-0.5">{subtitle}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {count > 0 && <span className="bg-white/25 text-white text-xs font-bold px-2.5 py-1 rounded-full">{count}</span>}
+                <button onClick={onClose} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">{children}</div>
+            <div className="p-4 border-t border-gray-100 flex-shrink-0">
+              <button onClick={onClose} className={`w-full py-3 rounded-2xl text-sm font-bold text-white ${accent} hover:opacity-90 transition-opacity`}>
+                Fechar
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ────────────────────────────────────────────────────────── Sidebar notification item */
+function VaccineItem({ animal }: { animal: any }) {
+  const days = diffDaysFromNow(animal.data_proxima_vacina);
+  const { pill, dot } = urgency(days);
+  const date = new Date(animal.data_proxima_vacina).toLocaleDateString("pt-PT");
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+      className="group relative bg-white border border-gray-100 rounded-2xl p-4 hover:border-orange-200 hover:shadow-sm transition-all duration-200"
+    >
+      <div className="flex items-start gap-3">
+        <div className="relative flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-orange-50 border border-orange-100">
+            <img src={animal.image || "/placeholder.png"} alt={animal.nome} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = "/placeholder.png"; }} />
+          </div>
+          <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${dot}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-1 mb-0.5">
+            <p className="font-semibold text-gray-800 text-sm truncate">{animal.nome}</p>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${pill}`}>{urgency(days).label}</span>
+          </div>
+          <p className="text-xs text-gray-400 flex items-center gap-1">
+            <Syringe className="w-3 h-3" /> {date}
+          </p>
+          <p className="text-xs text-gray-400 truncate">#{animal.chip}</p>
+        </div>
+      </div>
+      <Link href="/dashanimais">
+        <button className="mt-3 w-full text-xs font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 py-2 rounded-xl transition-colors flex items-center justify-center gap-1">
+          Ver animal <ArrowRight className="w-3 h-3" />
+        </button>
+      </Link>
+    </motion.div>
+  );
+}
+
+function OcorrenciaItem({ o }: { o: any }) {
+  const idx = Math.min(o.estado, 3);
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+      className="group bg-white border border-gray-100 rounded-2xl p-4 hover:border-red-200 hover:shadow-sm transition-all duration-200"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center flex-shrink-0">
+          <AlertTriangle className="w-4 h-4 text-red-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-1 mb-1">
+            <p className="font-semibold text-gray-800 text-sm leading-tight">{o.titulo}</p>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${ESTADOS_PILL[idx]}`}>{ESTADOS_TEXT[idx]}</span>
+          </div>
+          <p className="text-xs text-gray-400 line-clamp-2 mb-1">{o.descricao}</p>
+          <p className="text-xs text-gray-300 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {new Date(o.data_criacao).toLocaleDateString("pt-PT")}
+          </p>
+        </div>
+      </div>
+      <Link href="/dashocorrencias">
+        <button className="mt-3 w-full text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 py-2 rounded-xl transition-colors flex items-center justify-center gap-1">
+          Ver ocorrência <ArrowRight className="w-3 h-3" />
+        </button>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────── Main */
 export default function AdminDashboard() {
-
-  const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"vaccines" | "ocorrencias" | "settings">("vaccines");
   const [animals, setAnimals] = useState<any[]>([]);
-  const [vaccineNotifications, setVaccineNotifications] = useState<any[]>([]);
+  const [vaccineNotifs, setVaccineNotifs] = useState<any[]>([]);
+  const [ocorrenciaNotifs, setOcorrenciaNotifs] = useState<any[]>([]);
   const [showVaccinePopup, setShowVaccinePopup] = useState(false);
-  const [ocorrenciaNotifications, setOcorrenciaNotifications] = useState<any[]>([]);
   const [showOcorrenciaPopup, setShowOcorrenciaPopup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
-  const [userVaccineNotifications, setUserVaccineNotifications] = useState(false);
-  const [userReportNotifications, setUserReportNotifications] = useState(false);
+  const [vaccineToggle, setVaccineToggle] = useState(false);
+  const [reportToggle, setReportToggle] = useState(false);
+  const [togglingVaccine, setTogglingVaccine] = useState(false);
+  const [togglingReport, setTogglingReport] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) setUsername(storedUsername);
+    const s = localStorage.getItem("username");
+    if (s) setUsername(s);
   }, []);
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      if (!username) return;
-      try {
-        const response = await fetch("/api/admin/users");
-        if (response.ok) {
-          const users = await response.json();
-          const currentUser = users.find((u: any) => u.username === username);
-          if (currentUser) {
-            setUserId(currentUser.id);
-            setUserVaccineNotifications(currentUser.vaccine_notifications);
-            setUserReportNotifications(currentUser.report_notifications);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch current user:", error);
-      }
-    };
-
-    fetchCurrentUser();
+    if (!username) return;
+    fetch("/api/admin/users").then(r => r.ok ? r.json() : []).then((users: any[]) => {
+      const u = users.find((u: any) => u.username === username);
+      if (u) { setUserId(u.id); setVaccineToggle(u.vaccine_notifications); setReportToggle(u.report_notifications); }
+    }).catch(console.error);
   }, [username]);
 
   useEffect(() => {
-    const fetchAnimalsAndCheckVaccines = async () => {
-      try {
-        const response = await fetch("/api/admin/animals");
-        if (response.ok) {
-          const data = await response.json();
-          setAnimals(data);
-
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          const upcomingVaccines = data.filter((animal: any) => {
-            if (!animal.data_proxima_vacina) return false;
-            const vaccineDate = new Date(animal.data_proxima_vacina);
-            vaccineDate.setHours(0, 0, 0, 0);
-
-            const diffTime = vaccineDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            return diffDays >= 0 && diffDays <= 3;
-          });
-
-          setVaccineNotifications(upcomingVaccines);
-        }
-      } catch (error) {
-        console.error("Failed to fetch animals:", error);
-      }
-    };
-
-    const fetchOcorrenciasAndCheckUnresolved = async () => {
-      try {
-        const response = await fetch("/api/admin/ocorrencias");
-        if (response.ok) {
-          const data = await response.json();
-
-          const unresolvedOcorrencias = data.filter((ocorrencia: any) => ocorrencia.data_resolucao == null);
-
-          setOcorrenciaNotifications(unresolvedOcorrencias);
-        }
-      } catch (error) {
-        console.error("Failed to fetch ocorrencias:", error);
-      }
-    };
-
-    fetchAnimalsAndCheckVaccines();
-    fetchOcorrenciasAndCheckUnresolved();
+    fetch("/api/admin/animals").then(r => r.ok ? r.json() : []).then((data: any[]) => {
+      setAnimals(data);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      setVaccineNotifs(data.filter((a: any) => {
+        if (!a.data_proxima_vacina) return false;
+        const days = diffDaysFromNow(a.data_proxima_vacina);
+        return days >= 0 && days <= 3;
+      }));
+    }).catch(console.error);
+    fetch("/api/admin/ocorrencias").then(r => r.ok ? r.json() : []).then((data: any[]) => {
+      setOcorrenciaNotifs(data.filter((o: any) => !o.data_resolucao));
+    }).catch(console.error);
   }, []);
 
+  useEffect(() => { if (vaccineNotifs.length > 0 && vaccineToggle) setShowVaccinePopup(true); }, [vaccineNotifs, vaccineToggle]);
+  useEffect(() => { if (ocorrenciaNotifs.length > 0 && reportToggle) setShowOcorrenciaPopup(true); }, [ocorrenciaNotifs, reportToggle]);
 
-  useEffect(() => {
-    if (vaccineNotifications.length > 0 && userVaccineNotifications) {
-      setShowVaccinePopup(true);
-    }
-  }, [vaccineNotifications, userVaccineNotifications]);
-
-  useEffect(() => {
-    if (ocorrenciaNotifications.length > 0 && userReportNotifications) {
-      setShowOcorrenciaPopup(true);
-    }
-  }, [ocorrenciaNotifications, userReportNotifications]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    router.push("/login");
-  };
-
-  const updateNotification = async (type: 'vaccine' | 'report', value: boolean) => {
+  /* Optimistic toggle — update UI immediately, revert on failure */
+  const handleToggle = async (type: "vaccine" | "report", value: boolean) => {
     if (!userId) return;
+    const setLocal = type === "vaccine" ? setVaccineToggle : setReportToggle;
+    const setLoading = type === "vaccine" ? setTogglingVaccine : setTogglingReport;
+    setLocal(value);          // optimistic
+    setLoading(true);
     try {
-      const response = await fetch("/api/admin/users", {
+      const key = type === "vaccine" ? "vaccine_notifications" : "report_notifications";
+      const res = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: userId,
-          [type === 'vaccine' ? 'vaccine_notifications' : 'report_notifications']: value,
-        }),
+        body: JSON.stringify({ id: userId, [key]: value }),
       });
-      if (response.ok) {
-        if (type === 'vaccine') setUserVaccineNotifications(value);
-        else setUserReportNotifications(value);
-      } else {
-        console.error("Failed to update notifications");
-      }
-    } catch (error) {
-      console.error("Error updating notifications:", error);
-    }
+      if (!res.ok) setLocal(!value); // revert
+    } catch { setLocal(!value); }
+    finally { setLoading(false); }
   };
 
-  const createNotification = async (type: string, title: string, description: string) => {
-    if (!userId) return;
-    try {
-      await fetch('/api/admin/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, type, title, description }),
-      });
-    } catch (error) {
-      console.error('Error creating notification:', error);
-    }
-  };
+  const totalNotifs = vaccineNotifs.length + ocorrenciaNotifs.length;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 19 ? "Boa tarde" : "Boa noite";
 
-
-  const dashboardCards = [
-    {
-      title: "Animais",
-      icon: PawPrint,
-      href: "/dashanimais",
-      color: "from-orange-500 to-amber-500",
-      description: "Gerir animais"
-    },
-    {
-      title: "Stocks",
-      icon: Package,
-      href: "/dashstocks",
-      color: "from-orange-400 to-amber-400",
-      description: "Gerir stocks"
-    },
-    {
-      title: "Colónias",
-      icon: Users,
-      href: "/dashcolonias",
-      color: "from-amber-500 to-orange-500",
-      description: "Gerir colónias"
-    },
-    {
-      title: "Utilizadores",
-      icon: UsersIcon,
-      href: "/dashutilizadores",
-      color: "from-amber-600 to-orange-600",
-      description: "Gerir utilizadores"
-    },
-    {
-      title: "Ocorrências",
-      icon: FileText,
-      href: "/dashocorrencias",
-      color: "from-amber-400 to-orange-400",
-      description: "Gerir ocorrências",
-      span: true
-    },
-    {
-      title: "Documentos",
-      icon: FileText,
-      href: "/dashdocumentos",
-      color: "from-orange-500 to-orange-600",
-      description: "Gerar documentos",
-      span: true
-    },
-    {
-      title: "Notificações",
-      icon: Bell,
-      color: "from-orange-600 to-orange-600",
-      description: "Gerir notificações",
-      reversed: true,
-      hasCheckboxes: true
-    }
+  const NAV_CARDS = [
+    { title: "Animais", icon: PawPrint, href: "/dashanimais", desc: "Gerir animais registados", badge: null },
+    { title: "Stocks", icon: Package, href: "/dashstocks", desc: "Controlo de inventário", badge: null },
+    { title: "Colónias", icon: Users, href: "/dashcolonias", desc: "Gestão de colónias", badge: null },
+    { title: "Utilizadores", icon: Users, href: "/dashutilizadores", desc: "Gerir contas de utilizador", badge: null },
+    { title: "Ocorrências", icon: FileText, href: "/dashocorrencias", desc: "Incidentes por resolver", badge: ocorrenciaNotifs.length || null },
+    { title: "Documentos", icon: FileText, href: "/dashdocumentos", desc: "Gerar e exportar documentos", badge: null },
   ];
-
 
   return (
     <>
       <Header />
+      <main className="min-h-screen bg-gray-50">
 
-      {/* Main Content */}
-      <main className="min-h-screen bg-white p-6 relative">
-        <div className="max-w-7xl mx-auto">
-          {/* Greeting Section */}
+        {/* ── HERO BANNER ───────────────────────────────────── */}
+        <div className="relative bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 overflow-hidden">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
-              Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">{username || "Utilizador"}</span>! 👋
-            </h1>
-            <p className="text-gray-600 text-lg">Bem-vindo ao painel de administração</p>
-          </motion.div>
+            className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff18_1px,transparent_1px),linear-gradient(to_bottom,#ffffff18_1px,transparent_1px)] bg-[size:36px_36px]"
+            animate={{ backgroundPosition: ["0px 0px", "36px 36px"] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-3xl" animate={{ x: [0, 50, 0], y: [0, 30, 0] }} transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-amber-300/20 blur-3xl" animate={{ x: [0, -40, 0], y: [0, -30, 0] }} transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }} />
 
-          {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {dashboardCards.map((card, index) => {
-              const Icon = card.icon;
-              const isReversed = card.reversed;
-              const CardContent = (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.4 }}
-                  whileHover={card.hasCheckboxes ? {} : { scale: 1.02, y: -4 }}
-                  whileTap={card.hasCheckboxes ? {} : { scale: 0.98 }}
-                  className={`relative h-64 ${card.hasCheckboxes ? 'bg-gradient-to-r from-orange-600 to-amber-500' : 'bg-white'} rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-150 overflow-hidden group ${card.hasCheckboxes ? '' : 'cursor-pointer'} ${card.span ? "md:col-span-2" : ""}`}
+          <div className="relative z-10 max-w-7xl mx-auto px-6 pt-10 pb-16">
+            <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <p className="text-white/60 text-sm font-medium">{greeting},</p>
+              <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mt-1">
+                {username || "Utilizador"}
+              </h1>
+              <p className="text-white/50 text-sm mt-2">Painel de administração · {new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</p>
+            </motion.div>
+
+            {/* Stat pills */}
+            <div className="flex flex-wrap gap-3 mt-8">
+              {[
+                { label: "Animais", value: animals.length, icon: PawPrint, onClick: null },
+                { label: "Vacinas pendentes", value: vaccineNotifs.length, icon: Syringe, onClick: () => { setIsSidebarOpen(true); setSidebarTab("vaccines"); }, urgent: vaccineNotifs.length > 0 },
+                { label: "Ocorrências abertas", value: ocorrenciaNotifs.length, icon: ShieldAlert, onClick: () => { setIsSidebarOpen(true); setSidebarTab("ocorrencias"); }, urgent: ocorrenciaNotifs.length > 0 },
+              ].map((s, i) => (
+                <motion.button
+                  key={i}
+                  type="button"
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.1 }}
+                  onClick={s.onClick ?? undefined}
+                  disabled={!s.onClick}
+                  className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-150 ${s.urgent
+                      ? "bg-white/20 border-white/30 hover:bg-white/30"
+                      : "bg-white/10 border-white/20 hover:bg-white/20"
+                    } disabled:cursor-default`}
                 >
-                  {/* Gradient Background */}
-                  {!card.hasCheckboxes && (
-                    <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-10 transition-opacity duration-150`} />
-                  )}
-
-                  {/* Content */}
-                  <div className="relative h-full p-8 flex flex-col justify-between">
-                    <div>
-                      {!card.hasCheckboxes && (
-                        <motion.div
-                          className={`w-16 h-16 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-4 shadow-lg`}
-                          whileHover={{ rotate: 5, scale: 1.1 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                        >
-                          <Icon className="w-8 h-8 text-white" />
-                        </motion.div>
-                      )}
-                      <h3 className={`text-2xl font-bold mb-2 ${card.hasCheckboxes ? 'text-white' : 'text-gray-800'}`}>{card.title}</h3>
-                      <p className={`text-sm ${card.hasCheckboxes ? 'text-orange-100' : 'text-gray-600'}`}>{card.description}</p>
-                    </div>
-                    {card.hasCheckboxes ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
-                          <label htmlFor="vaccine-notifications" className="text-gray-800 text-sm font-medium cursor-pointer flex-1">
-                            Notificações de vacinas
-                          </label>
-                          <input
-                            type="checkbox"
-                            id="vaccine-notifications"
-                            checked={userVaccineNotifications}
-                            onChange={(e) => updateNotification('vaccine', e.target.checked)}
-                            className="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-orange-500 focus:ring-2 ml-3"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
-                          <label htmlFor="report-notifications" className="text-gray-800 text-sm font-medium cursor-pointer flex-1">
-                            Notificações de ocorrências
-                          </label>
-                          <input
-                            type="checkbox"
-                            id="report-notifications"
-                            checked={userReportNotifications}
-                            onChange={(e) => updateNotification('report', e.target.checked)}
-                            className="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-orange-500 focus:ring-2 ml-3"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-orange-600 font-medium group-hover:translate-x-2 transition-transform duration-150">
-                        <span className="text-sm font-semibold">Abrir tabela</span>
-                        <ChevronRight className="w-4 h-4 ml-2" />
-                      </div>
-                    )}
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${s.urgent ? "bg-white/30" : "bg-white/15"}`}>
+                    <s.icon className="w-4 h-4 text-white" />
                   </div>
-                </motion.div>
-              );
+                  <div className="text-left">
+                    <p className="text-white font-extrabold text-xl leading-none">{s.value}</p>
+                    <p className="text-white/60 text-xs mt-0.5">{s.label}</p>
+                  </div>
+                  {s.urgent && s.value > 0 && <span className="ml-1 w-2 h-2 rounded-full bg-red-400 animate-pulse" />}
+                </motion.button>
+              ))}
+            </div>
+          </div>
 
-              if (card.href && !card.hasCheckboxes) {
-                return (
-                  <Link key={card.href} href={card.href}>
-                    {CardContent}
-                  </Link>
-                );
-              }
-              return <div key={card.title}>{CardContent}</div>;
-            })}
+          {/* Wave */}
+          <div className="absolute bottom-0 left-0 right-0">
+            <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+              <path d="M0 48L60 40C120 32 240 16 360 12C480 8 600 16 720 20C840 24 960 24 1080 20C1200 16 1320 8 1380 4L1440 0V48H0Z" fill="#f9fafb" />
+            </svg>
           </div>
         </div>
 
-        {/* Sidebar Toggle Arrow */}
-        <motion.button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="-translate-y-15/2 translate-x-437 z-50 bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white p-5 rounded-l-3xl shadow-2xl hover:shadow-orange-500/50 transition-all duration-150 group relative"
-          initial={{ x: 0 }}
-          animate={{ x: isSidebarOpen ? -315 : 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <div className="relative">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-white/30 rounded-full blur-xl group-hover:bg-white/50 transition-all duration-150"></div>
-            {/* Icon container */}
-            <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-2 group-hover:bg-white/30 transition-all duration-150">
-              {isSidebarOpen ? (
-                <ChevronRight className="w-7 h-7 relative z-10" />
-              ) : (
-                <ChevronLeft className="w-7 h-7 relative z-10" />
-              )}
+        {/* ── CONTENT ───────────────────────────────────────── */}
+        <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+
+          {/* Nav cards */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Módulos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {NAV_CARDS.map((card, i) => {
+                const Icon = card.icon;
+                return (
+                  <motion.div key={card.href} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}>
+                    <Link href={card.href}>
+                      <motion.div
+                        whileHover={{ y: -3, boxShadow: "0 12px 32px rgba(0,0,0,0.09)" }}
+                        whileTap={{ scale: 0.98 }}
+                        className="group bg-white border border-gray-100 rounded-2xl p-5 cursor-pointer transition-all duration-200 flex items-center gap-4"
+                      >
+                        <div className="relative flex-shrink-0">
+                          <div className="w-13 h-13 w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-md shadow-orange-200/60 group-hover:scale-105 transition-transform duration-200">
+                            <Icon className="w-6 h-6 text-white" />
+                          </div>
+                          {card.badge && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow">
+                              {card.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-800">{card.title}</h3>
+                          <p className="text-gray-400 text-xs mt-0.5 truncate">{card.desc}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                      </motion.div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
-          {(vaccineNotifications.length + ocorrenciaNotifications.length) > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
-              {vaccineNotifications.length + ocorrenciaNotifications.length}
+
+          {/* Notification prefs */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Preferências de notificação</p>
+            <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+              {/* Header row */}
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <Bell className="w-4 h-4 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm">Alertas automáticos</h3>
+                  <p className="text-gray-400 text-xs">Receba notificações quando ocorrerem eventos importantes</p>
+                </div>
+              </div>
+
+              {/* Toggle rows */}
+              {[
+                {
+                  type: "vaccine" as const,
+                  icon: Syringe,
+                  label: "Vacinas próximas",
+                  sub: "Alerta quando um animal tem vacina nos próximos 3 dias",
+                  checked: vaccineToggle,
+                  loading: togglingVaccine,
+                  count: vaccineNotifs.length,
+                },
+                {
+                  type: "report" as const,
+                  icon: AlertTriangle,
+                  label: "Ocorrências por resolver",
+                  sub: "Alerta quando existem ocorrências abertas sem resolução",
+                  checked: reportToggle,
+                  loading: togglingReport,
+                  count: ocorrenciaNotifs.length,
+                },
+              ].map((n, idx) => (
+                <div key={n.type} className={`px-6 py-5 flex items-center gap-4 ${idx === 0 ? "" : "border-t border-gray-50"}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${n.checked ? "bg-orange-100" : "bg-gray-100"}`}>
+                    <n.icon className={`w-4 h-4 transition-colors ${n.checked ? "text-orange-500" : "text-gray-400"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-800 text-sm">{n.label}</p>
+                      {n.count > 0 && (
+                        <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{n.count} pendentes</span>
+                      )}
+                    </div>
+                    <p className="text-gray-400 text-xs mt-0.5">{n.sub}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <Toggle checked={n.checked} onChange={(v) => handleToggle(n.type, v)} disabled={n.loading} />
+                  </div>
+                </div>
+              ))}
+
+              {/* Footer hint */}
+              <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-green-400" />
+                  As alterações são guardadas automaticamente
+                </p>
+              </div>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* ── SIDEBAR TOGGLE BUTTON ─────────────────────────── */}
+        <motion.button
+          type="button"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-50"
+          animate={{ x: isSidebarOpen ? -352 : 0 }}
+          transition={{ type: "spring", stiffness: 280, damping: 28 }}
+        >
+          <div className="relative bg-gradient-to-b from-orange-500 to-amber-500 text-white py-6 px-2.5 rounded-l-2xl shadow-xl hover:px-4 transition-all duration-150">
+            {totalNotifs > 0 && (
+              <span className="absolute -top-2 -left-1 bg-red-500 text-white text-[10px] font-extrabold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                {totalNotifs}
+              </span>
+            )}
+            {isSidebarOpen ? <ChevronRight className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+          </div>
         </motion.button>
 
-        {/* Side Panel */}
+        {/* ── SIDEBAR PANEL ─────────────────────────────────── */}
         <AnimatePresence>
           {isSidebarOpen && (
             <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setIsSidebarOpen(false)}
                 className="fixed inset-0 bg-black/20 z-30"
               />
-
-              {/* Side Panel */}
               <motion.div
-                initial={{ x: 320 }}
-                animate={{ x: 0 }}
-                exit={{ x: 320 }}
+                initial={{ x: 360 }} animate={{ x: 0 }} exit={{ x: 360 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-white to-orange-50/30 shadow-2xl z-[200] border-l-2 border-orange-200"
+                className="fixed right-0 top-0 h-full w-88 w-[352px] bg-gray-50 border-l border-gray-200 shadow-2xl z-[200] flex flex-col"
               >
-                <div className="p-6 h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-orange-100">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">Painel Lateral</h2>
-                    <button
-                      onClick={() => setIsSidebarOpen(false)}
-                      className="p-2 hover:bg-orange-100 rounded-lg transition-colors group"
-                    >
-                      <ChevronRight className="w-5 h-5 text-orange-600 group-hover:text-orange-700" />
+                {/* Panel header */}
+                <div className="bg-white border-b border-gray-100 px-5 pt-5 pb-0 flex-shrink-0">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-extrabold text-gray-800 text-lg">Alertas</h2>
+                    <button onClick={() => setIsSidebarOpen(false)} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors">
+                      <X className="w-4 h-4 text-gray-400" />
                     </button>
                   </div>
-                  {/* Side panel content - blank for now */}
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="space-y-6">
-                      {/* Vaccine Notifications */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                          <PawPrint className="w-5 h-5 text-orange-500" />
-                          Vacinas Pendentes
-                        </h3>
-                        <div className="space-y-3">
-                          {vaccineNotifications.map((animal: any) => {
-                            const vaccineDate = new Date(animal.data_proxima_vacina);
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const diffTime = vaccineDate.getTime() - today.getTime();
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            let urgencyColor = "bg-green-100 text-green-800";
-                            let urgencyText = "Próxima";
-                            if (diffDays === 0) {
-                              urgencyColor = "bg-red-100 text-red-800";
-                              urgencyText = "Hoje";
-                            } else if (diffDays === 1) {
-                              urgencyColor = "bg-orange-100 text-orange-800";
-                              urgencyText = "Amanhã";
-                            } else if (diffDays <= 3) {
-                              urgencyColor = "bg-yellow-100 text-yellow-800";
-                              urgencyText = `Em ${diffDays} dias`;
-                            }
-                            return (
-                              <div key={animal.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <p className="font-medium text-gray-800">{animal.nome}</p>
-                                <p className="text-sm text-gray-600">Chip: {animal.chip}</p>
-                                <p className="text-sm text-gray-500">Próxima: {vaccineDate.toLocaleDateString('pt-PT')}</p>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${urgencyColor}`}>
-                                  {urgencyText}
-                                </span>
-                                <Link href="/dashanimais">
-                                  <Button size="sm" className="mt-2 w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
-                                    Ver Detalhes
-                                  </Button>
-                                </Link>
-                              </div>
-                            );
-                          })}
-                          {vaccineNotifications.length === 0 && <p className="text-gray-500 text-sm">Nenhuma vacina pendente</p>}
-                        </div>
-                      </div>
-                      {/* Ocorrencia Notifications */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-red-500" />
-                          Ocorrências Não Resolvidas
-                        </h3>
-                        <div className="space-y-3">
-                          {ocorrenciaNotifications.map((ocorrencia: any) => {
-                            const getEstadoText = (estado: number) => {
-                              const estados = ["Animal Perdido", "Animal Ferido", "Abandono", "Outro"];
-                              return estados[estado] || "Desconhecido";
-                            };
-                            const getEstadoColor = (estado: number) => {
-                              const colors = ["bg-blue-100 text-blue-800", "bg-red-100 text-red-800", "bg-yellow-100 text-yellow-800", "bg-gray-100 text-gray-800"];
-                              return colors[estado] || "bg-gray-100 text-gray-800";
-                            };
-                            return (
-                              <div key={ocorrencia.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <p className="font-medium text-gray-800">{ocorrencia.titulo}</p>
-                                <p className="text-sm text-gray-600 line-clamp-2">{ocorrencia.descricao}</p>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(ocorrencia.estado)}`}>
-                                  {getEstadoText(ocorrencia.estado)}
-                                </span>
-                                <Link href="/dashocorrencias">
-                                  <Button size="sm" className="mt-2 w-full bg-red-500 hover:bg-red-600 text-white rounded-lg">
-                                    Ver Detalhes
-                                  </Button>
-                                </Link>
-                              </div>
-                            );
-                          })}
-                          {ocorrenciaNotifications.length === 0 && <p className="text-gray-500 text-sm">Nenhuma ocorrência não resolvida</p>}
-                        </div>
-                      </div>
-                    </div>
+                  {/* Tabs */}
+                  <div className="flex gap-1">
+                    {([
+                      { key: "vaccines", label: "Vacinas", count: vaccineNotifs.length },
+                      { key: "ocorrencias", label: "Ocorrências", count: ocorrenciaNotifs.length },
+                      { key: "settings", label: "Definições", count: 0 },
+                    ] as const).map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setSidebarTab(tab.key)}
+                        className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors duration-150 ${sidebarTab === tab.key
+                            ? "text-orange-600 bg-gray-50"
+                            : "text-gray-400 hover:text-gray-600"
+                          }`}
+                      >
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${sidebarTab === tab.key ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500"}`}>
+                            {tab.count}
+                          </span>
+                        )}
+                        {sidebarTab === tab.key && (
+                          <motion.div layoutId="sidebar-tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+                        )}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                {/* Tab content */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <AnimatePresence mode="wait">
+
+                    {sidebarTab === "vaccines" && (
+                      <motion.div key="vaccines" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-3">
+                        {vaccineNotifs.length === 0 ? (
+                          <div className="text-center py-16">
+                            <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                              <CheckCircle2 className="w-7 h-7 text-green-500" />
+                            </div>
+                            <p className="font-semibold text-gray-600 text-sm">Tudo em dia!</p>
+                            <p className="text-gray-400 text-xs mt-1">Sem vacinas pendentes nos próximos 3 dias</p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-400 px-1 mb-2">{vaccineNotifs.length} animal(is) com vacinas próximas</p>
+                            {vaccineNotifs.map(a => <VaccineItem key={a.id} animal={a} />)}
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {sidebarTab === "ocorrencias" && (
+                      <motion.div key="ocorrencias" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-3">
+                        {ocorrenciaNotifs.length === 0 ? (
+                          <div className="text-center py-16">
+                            <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                              <CheckCircle2 className="w-7 h-7 text-green-500" />
+                            </div>
+                            <p className="font-semibold text-gray-600 text-sm">Sem ocorrências abertas</p>
+                            <p className="text-gray-400 text-xs mt-1">Todos os incidentes foram resolvidos</p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-400 px-1 mb-2">{ocorrenciaNotifs.length} ocorrência(s) sem resolução</p>
+                            {ocorrenciaNotifs.map(o => <OcorrenciaItem key={o.id} o={o} />)}
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {sidebarTab === "settings" && (
+                      <motion.div key="settings" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-3">
+                        <p className="text-xs text-gray-400 px-1 mb-4">Escolha os alertas que pretende receber</p>
+                        {[
+                          { type: "vaccine" as const, icon: Syringe, label: "Vacinas próximas", sub: "Alertas 3 dias antes da vacina", checked: vaccineToggle, loading: togglingVaccine, count: vaccineNotifs.length },
+                          { type: "report" as const, icon: AlertTriangle, label: "Ocorrências abertas", sub: "Alertas de incidentes por resolver", checked: reportToggle, loading: togglingReport, count: ocorrenciaNotifs.length },
+                        ].map(n => (
+                          <div key={n.type} className="bg-white border border-gray-100 rounded-2xl p-4">
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${n.checked ? "bg-orange-100" : "bg-gray-100"}`}>
+                                <n.icon className={`w-4 h-4 ${n.checked ? "text-orange-500" : "text-gray-400"}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-semibold text-gray-800 text-sm">{n.label}</p>
+                                  <Toggle checked={n.checked} onChange={v => handleToggle(n.type, v)} disabled={n.loading} />
+                                </div>
+                                <p className="text-gray-400 text-xs mt-1">{n.sub}</p>
+                                {n.count > 0 && (
+                                  <span className="inline-block mt-2 bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-100">
+                                    {n.count} pendente(s) agora
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-start gap-3">
+                          <CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-xs text-orange-700">As preferências são guardadas automaticamente e sincronizadas com a sua conta.</p>
+                        </div>
+                      </motion.div>
+                    )}
+
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </>
           )}
         </AnimatePresence>
 
-        {/* Vaccine Notification Popup */}
-        <AnimatePresence>
-          {showVaccinePopup && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-              onClick={() => setShowVaccinePopup(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
-              >
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                        <PawPrint className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold">Vacinas Pendentes</h2>
-                        <p className="text-orange-100 text-sm">Animais com vacinas próximas</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowVaccinePopup(false)}
-                      className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+        {/* ── MODALS ────────────────────────────────────────── */}
+        <Modal open={showVaccinePopup} onClose={() => setShowVaccinePopup(false)}
+          icon={Syringe} accent="bg-gradient-to-r from-orange-500 to-amber-500"
+          title="Vacinas Pendentes" subtitle="Animais com vacinas nos próximos 3 dias"
+          count={vaccineNotifs.length}
+        >
+          {vaccineNotifs.length === 0
+            ? <div className="text-center py-10 text-gray-400"><PawPrint className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Nenhuma vacina pendente</p></div>
+            : vaccineNotifs.map(a => <VaccineItem key={a.id} animal={a} />)
+          }
+        </Modal>
 
-                <div className="p-6 max-h-96 overflow-y-auto">
-                  <div className="space-y-4">
-                    {vaccineNotifications.map((animal: any) => {
-                      const vaccineDate = new Date(animal.data_proxima_vacina);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const diffTime = vaccineDate.getTime() - today.getTime();
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        <Modal open={showOcorrenciaPopup} onClose={() => setShowOcorrenciaPopup(false)}
+          icon={ShieldAlert} accent="bg-gradient-to-r from-red-500 to-orange-500"
+          title="Ocorrências Não Resolvidas" subtitle="Incidentes pendentes de resolução"
+          count={ocorrenciaNotifs.length}
+        >
+          {ocorrenciaNotifs.length === 0
+            ? <div className="text-center py-10 text-gray-400"><FileText className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Sem ocorrências por resolver</p></div>
+            : ocorrenciaNotifs.map(o => <OcorrenciaItem key={o.id} o={o} />)
+          }
+        </Modal>
 
-                      let urgencyColor = "bg-green-100 text-green-800";
-                      let urgencyText = "Próxima";
-
-                      if (diffDays === 0) {
-                        urgencyColor = "bg-red-100 text-red-800";
-                        urgencyText = "Hoje";
-                      } else if (diffDays === 1) {
-                        urgencyColor = "bg-orange-100 text-orange-800";
-                        urgencyText = "Amanhã";
-                      } else if (diffDays <= 3) {
-                        urgencyColor = "bg-yellow-100 text-yellow-800";
-                        urgencyText = `Em ${diffDays} dias`;
-                      }
-
-                      return (
-                        <motion.div
-                          key={animal.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
-                            <img
-                              src={animal.image || "/placeholder.png"}
-                              alt={animal.nome}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-gray-900 truncate">{animal.nome}</h3>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${urgencyColor}`}>
-                                {urgencyText}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600">Chip: {animal.chip}</p>
-                            <p className="text-sm text-gray-500">
-                              Data da vacina: {vaccineDate.toLocaleDateString('pt-PT')}
-                            </p>
-                          </div>
-
-                          <Link href="/dashanimais">
-                            <Button
-                              size="sm"
-                              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
-                            >
-                              Ver Detalhes
-                            </Button>
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  {vaccineNotifications.length === 0 && (
-                    <div className="text-center py-8">
-                      <PawPrint className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">Nenhuma vacina pendente</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 bg-gray-50 border-t border-gray-200">
-                  <Button
-                    onClick={() => setShowVaccinePopup(false)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl"
-                  >
-                    Fechar
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Ocorrencia Notification Popup */}
-        <AnimatePresence>
-          {showOcorrenciaPopup && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-              onClick={() => setShowOcorrenciaPopup(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
-              >
-                <div className="bg-gradient-to-r from-red-500 to-orange-500 p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold">Ocorrências Não Resolvidas</h2>
-                        <p className="text-red-100 text-sm">Ocorrências pendentes de resolução</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowOcorrenciaPopup(false)}
-                      className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 max-h-96 overflow-y-auto">
-                  <div className="space-y-4">
-                    {ocorrenciaNotifications.map((ocorrencia: any) => {
-                      const getEstadoText = (estado: number) => {
-                        const estados = ["Animal Perdido", "Animal Ferido", "Abandono", "Outro"];
-                        return estados[estado] || "Desconhecido";
-                      };
-
-                      const getEstadoColor = (estado: number) => {
-                        const colors = ["bg-blue-100 text-blue-800", "bg-red-100 text-red-800", "bg-yellow-100 text-yellow-800", "bg-gray-100 text-gray-800"];
-                        return colors[estado] || "bg-gray-100 text-gray-800";
-                      };
-
-                      return (
-                        <motion.div
-                          key={ocorrencia.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-6 h-6 text-red-600" />
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-gray-900 truncate">{ocorrencia.titulo}</h3>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(ocorrencia.estado)}`}>
-                                {getEstadoText(ocorrencia.estado)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{ocorrencia.descricao}</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span>Morada: {ocorrencia.morada}</span>
-                              <span>Data: {new Date(ocorrencia.data_criacao).toLocaleDateString('pt-PT')}</span>
-                            </div>
-                          </div>
-
-                          <Link href="/dashocorrencias">
-                            <Button
-                              size="sm"
-                              className="bg-red-500 hover:bg-red-600 text-white rounded-xl"
-                            >
-                              Ver Detalhes
-                            </Button>
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  {ocorrenciaNotifications.length === 0 && (
-                    <div className="text-center py-8">
-                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">Nenhuma ocorrência não resolvida</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 bg-gray-50 border-t border-gray-200">
-                  <Button
-                    onClick={() => setShowOcorrenciaPopup(false)}
-                    className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-xl"
-                  >
-                    Fechar
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
-
     </>
   );
 }
