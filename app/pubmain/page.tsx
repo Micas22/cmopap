@@ -56,7 +56,7 @@ const StatCard = ({ img, title, index }: { img: string; title: string; index: nu
   );
 };
 
-export default function Header() {
+export default function Headerr() {
 
   const [showPopup, setShowPopup] = useState(false);
   const [username, setUsername] = useState("");
