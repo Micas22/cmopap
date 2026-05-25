@@ -103,3 +103,11 @@ model aconselhamentos {
   local         String?
   Animal        Animal?  @relation(fields: [animal], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  used      Boolean  @default(false)
+}
+

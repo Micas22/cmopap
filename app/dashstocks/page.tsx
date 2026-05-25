@@ -103,14 +103,14 @@ export default function StocksDashboard() {
       setUsers(safeUsers);
       const map: Record<number, string> = {};
       safeUsers.forEach((u) => {
-        map[u.id] = u.email;
+        map[u.id] = u.email ? u.email.split("@")[0] : u.email;
       });
       setUserMap(map);
 
       const storedEmail = localStorage.getItem("email");
       if (storedEmail) {
         setEmail(storedEmail);
-        const found = safeUsers.find((u) => u.email === storedUsername);
+        const found = safeUsers.find((u) => u.email === storedEmail);
         if (found) {
           setCurrentUserId(found.id);
         }

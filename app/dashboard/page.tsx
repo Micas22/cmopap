@@ -180,7 +180,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const s = localStorage.getItem("email");
-    if (s) setUsername(s);
+    if (s) setEmail(s);
   }, []);
 
   useEffect(() => {
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <p className="text-white/60 text-sm font-medium">{greeting},</p>
               <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mt-1">
-                {email || "Utilizador"}
+                {email ? email.split("@")[0] : "Utilizador"}
               </h1>
               <p className="text-white/50 text-sm mt-2">Painel de administração · {new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</p>
             </motion.div>

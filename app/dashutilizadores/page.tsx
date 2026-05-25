@@ -327,7 +327,7 @@ export default function UsersDashboard() {
                       </TableHead>
                       <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("email")}>
                         <div className="flex items-center gap-1">
-                          Username
+                          Email
                           {sortConfig?.key === "email" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
                         </div>
                       </TableHead>
@@ -356,10 +356,10 @@ export default function UsersDashboard() {
                         <TableCell className="pl-8 font-medium text-gray-600">#{u.id}</TableCell>
                         <TableCell className="font-medium text-gray-900">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                              {u.email.charAt(0).toUpperCase()}
-                            </div>
-                            {u.email}
+                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                               {u.email.charAt(0).toUpperCase()}
+                             </div>
+                             {u.email.split("@")[0]}
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-400 font-mono text-xs">••••••••</TableCell>
@@ -446,8 +446,8 @@ export default function UsersDashboard() {
                   </div>
 
                   <div className="space-y-1">
-                    <
-                    <div className="text-lg font-medium text-gray-900">{viewItem.email}</div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</label>
+                    <div className="text-lg font-medium text-gray-900">{viewItem.email.split("@")[0]}</div>
                   </div>
 
                   <div className="space-y-1">

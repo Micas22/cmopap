@@ -35,8 +35,13 @@ export default function AconselhamentosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("Admin");
+  const [email, setEmail] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    const u = localStorage.getItem("email");
+    if (u) setEmail(u);
+  }, []);
   const [formData, setFormData] = useState({
     data: "",
     nome: "",

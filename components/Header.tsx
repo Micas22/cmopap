@@ -18,6 +18,8 @@ interface Notification {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const emailPrefix = (email: string) => email ? email.split("@")[0] : "";
+
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -381,7 +383,7 @@ export default function Header() {
                     <img src="/user.png" alt="User" className="w-full h-full object-cover" />
                   </div>
                   <span className={`text-sm font-medium hidden sm:block truncate max-w-[72px] transition-colors ${showPopup ? "text-orange-600" : "text-white"}`}>
-                    {email || "Conta"}
+                    {emailPrefix(email) || "Conta"}
                   </span>
                   <motion.div animate={{ rotate: showPopup ? 90 : 0 }} transition={{ duration: 0.2 }} className={`transition-colors ${showPopup ? "text-orange-400" : "text-white/60"}`}>
                     <ChevronRight size={12} />
@@ -405,7 +407,7 @@ export default function Header() {
                           </div>
                           <div>
                             <p className="text-[9px] text-white/65 uppercase tracking-[0.12em] font-bold mb-0.5">Sessão iniciada</p>
-                            <p className="text-white font-semibold text-sm truncate max-w-[140px]">{email || "Convidado"}</p>
+                            <p className="text-white font-semibold text-sm truncate max-w-[140px]">{emailPrefix(email) || "Convidado"}</p>
                           </div>
                         </div>
                       </div>
@@ -533,7 +535,7 @@ export default function Header() {
                     </div>
                     <div>
                       <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold">Sessão</p>
-                      <p className="text-white text-sm font-semibold">{email || "Convidado"}</p>
+                      <p className="text-white text-sm font-semibold">{emailPrefix(email) || "Convidado"}</p>
                     </div>
                   </div>
                   <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white/80 hover:bg-white/15 hover:text-white transition-colors">
