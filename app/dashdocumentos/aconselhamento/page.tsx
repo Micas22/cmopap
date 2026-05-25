@@ -233,7 +233,9 @@ export default function AconselhamentosPage() {
     }).format(date);
   };
   const enrichedData = sortData(filterAndSearchData(data));
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    localStorage.removeItem("email");
+    await fetch("/api/logout", { method: "POST" });
     router.push('/login');
   };
   const resetForm = () => {

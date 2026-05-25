@@ -133,9 +133,10 @@ export default function Header() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem("email");
     localStorage.removeItem("userId");
+    await fetch("/api/logout", { method: "POST" });
     router.push("/login");
   };
 

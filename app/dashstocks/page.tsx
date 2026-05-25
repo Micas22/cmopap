@@ -137,8 +137,9 @@ export default function StocksDashboard() {
     fetchStocks();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem("email");
+    await fetch("/api/logout", { method: "POST" });
     router.push("/login");
   };
 

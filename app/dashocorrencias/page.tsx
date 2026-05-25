@@ -88,7 +88,7 @@ export default function DashOcorrencias() {
     fetchOcorrencias();
   };
 
-  const handleLogout = () => { localStorage.removeItem("email"); router.push("/login"); };
+  const handleLogout = async () => { localStorage.removeItem("email"); await fetch("/api/logout", { method: "POST" }); router.push("/login"); };
 
   /* derived */
   const filtered = ocorrencias.filter(o =>
