@@ -32,6 +32,7 @@ model Animal {
   data_proxima_vacina DateTime?         @map("data_proxima_vacina")
   arquivos            String?
   aconselhamentos     aconselhamentos[]
+  colonia             Int?
 }
 
 model Stocks {

@@ -21,7 +21,11 @@ export default function AdminDashboard() {
   const [sexFilter, setSexFilter] = useState<number | null>(null);
   const [raceFilter, setRaceFilter] = useState("");
   const [showRaceSuggestions, setShowRaceSuggestions] = useState(false);
-  const [animals, setAnimals] = useState<{ id: number; nome: string; chip: string; sex: number; image?: string; raca?: string; porte?: number; altura?: number; peso?: number; esterelizacao?: number; observações?: string; arquivos?: string }[]>([]);
+  const [animals, setAnimals] = useState<{ id: number; nome: string; chip: string; sex: number; image?: string; raca?: string; porte?: number; altura?: number; peso?: number; esterelizacao?: number; observações?: string; arquivos?: string; colonia?: number | null }[]>([]);
+  const [colonias, setColonias] = useState<{ id: number; nome: string }[]>([]);
+  const [createColoniaOpen, setCreateColoniaOpen] = useState(false);
+  const [editColoniaOpen, setEditColoniaOpen] = useState(false);
+  const [newAnimalColonia, setNewAnimalColonia] = useState<number | null>(null);
 
   const fetchAnimals = async () => {
     try {
@@ -33,8 +37,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchColonias = async () => {
+    try {
+      const res = await fetch("/api/admin/colonias");
+      const data = await res.json();
+      setColonias(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch colonias:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAnimals();
+    fetchColonias();
   }, []);
 
   const handleSort = (key: string) => {
@@ -358,64 +373,30 @@ export default function AdminDashboard() {
       formData.append("nome", newAnimalNome);
       formData.append("chip", newAnimalChip);
       formData.append("sex", newAnimalSex.toString());
-      if (newAnimalImage) {
-        formData.append("image", newAnimalImage);
-      }
-      if (newAnimalRaca) {
-        formData.append("raca", newAnimalRaca);
-      }
-      if (newAnimalPorte !== null) {
-        formData.append("porte", newAnimalPorte.toString());
-      }
-      if (newAnimalAltura) {
-        formData.append("altura", newAnimalAltura);
-      }
-      if (newAnimalPeso) {
-        formData.append("peso", newAnimalPeso);
-      }
-      if (newAnimalEsterelizacao !== null) {
-        formData.append("esterelizacao", newAnimalEsterelizacao.toString());
-      }
-      if (newAnimalObservações) {
-        formData.append("observações", newAnimalObservações);
-      }
+      if (newAnimalImage) formData.append("image", newAnimalImage);
+      if (newAnimalRaca) formData.append("raca", newAnimalRaca);
+      if (newAnimalPorte !== null) formData.append("porte", newAnimalPorte.toString());
+      if (newAnimalAltura) formData.append("altura", newAnimalAltura);
+      if (newAnimalPeso) formData.append("peso", newAnimalPeso);
+      if (newAnimalEsterelizacao !== null) formData.append("esterelizacao", newAnimalEsterelizacao.toString());
+      if (newAnimalObservações) formData.append("observações", newAnimalObservações);
+      if (newAnimalColonia !== null) formData.append("colonia", newAnimalColonia.toString());
       if (newAnimalArquivos && newAnimalArquivos.length > 0) {
-        newAnimalArquivos.forEach((file) => {
-          formData.append("arquivos", file);
-        });
+        newAnimalArquivos.forEach((file) => formData.append("arquivos", file));
       }
 
-      const res = await fetch("/api/admin/animals", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(`Failed to create animal: ${error.error}`);
-        return;
-      }
+      const res = await fetch("/api/admin/animals", { method: "POST", body: formData });
+      if (!res.ok) { const error = await res.json(); alert(`Failed to create animal: ${error.error}`); return; }
 
       const newAnimal = await res.json();
       setAnimals((prev) => [...prev, newAnimal]);
-      setNewAnimalNome("");
-      setNewAnimalChip("");
-      setNewAnimalSex(1);
-      setNewAnimalRaca("");
-      setNewAnimalPorte(null);
-      setNewAnimalAltura("");
-      setNewAnimalPeso("");
-      setNewAnimalEsterelizacao(null);
-      setNewAnimalObservações("");
-      setNewAnimalDataUltimaVacina("");
-      setNewAnimalDataProximaVacina("");
-      setNewAnimalImage(null);
-      setNewAnimalArquivos(null);
+      setNewAnimalNome(""); setNewAnimalChip(""); setNewAnimalSex(1); setNewAnimalRaca("");
+      setNewAnimalPorte(null); setNewAnimalAltura(""); setNewAnimalPeso("");
+      setNewAnimalEsterelizacao(null); setNewAnimalObservações("");
+      setNewAnimalDataUltimaVacina(""); setNewAnimalDataProximaVacina("");
+      setNewAnimalImage(null); setNewAnimalArquivos(null); setNewAnimalColonia(null);
       setCreateAnimalDialogOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert("Error creating animal");
-    }
+    } catch (err) { console.error(err); alert("Error creating animal"); }
   };
 
   const [showPopup, setShowPopup] = useState(false);
@@ -463,6 +444,28 @@ export default function AdminDashboard() {
                         <Input placeholder="Nome" value={newAnimalNome} onChange={(e) => setNewAnimalNome(e.target.value)} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                         <Input placeholder="Chip" value={newAnimalChip} onChange={(e) => setNewAnimalChip(e.target.value)} className="rounded-xl border-gray-200 focus:ring-orange-500" />
                         <Input placeholder="Raça (Opcional)" value={newAnimalRaca} onChange={(e) => setNewAnimalRaca(e.target.value)} className="rounded-xl border-gray-200 focus:ring-orange-500" />
+
+                        {/* Colónia Dropdown */}
+                        <div className="relative">
+                          <button type="button" onClick={() => setCreateColoniaOpen(!createColoniaOpen)} className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all h-10">
+                            <span className="text-gray-900">{newAnimalColonia === null ? "Colónia (Opcional)" : colonias.find(c => c.id === newAnimalColonia)?.nome ?? "Colónia"}</span>
+                            <ChevronDown className={`w-4 h-4 text-gray-500 ${createColoniaOpen ? "rotate-180" : ""}`} />
+                          </button>
+                          {createColoniaOpen && (
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                              <button type="button" onClick={() => { setNewAnimalColonia(null); setCreateColoniaOpen(false); }} className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 text-gray-400">
+                                Nenhuma colónia
+                                {newAnimalColonia === null && <Check className="w-4 h-4 text-orange-500" />}
+                              </button>
+                              {colonias.map((c) => (
+                                <button key={c.id} type="button" onClick={() => { setNewAnimalColonia(c.id); setCreateColoniaOpen(false); }} className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50">
+                                  {c.nome}
+                                  {newAnimalColonia === c.id && <Check className="w-4 h-4 text-orange-500" />}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </div>
 
                         {/* Sex Dropdown */}
                         <div className="relative">
@@ -584,6 +587,7 @@ export default function AdminDashboard() {
                       <TableHead className="font-semibold text-gray-500" onClick={() => handleSort("nome")}>Nome</TableHead>
                       <TableHead className="font-semibold text-gray-500" onClick={() => handleSort("chip")}>Chip</TableHead>
                       <TableHead className="font-semibold text-gray-500" onClick={() => handleSort("sex")}>Sexo</TableHead>
+                      <TableHead className="font-semibold text-gray-500" onClick={() => handleSort("colonia")}>Colónia</TableHead>
                       <TableHead className="text-right pr-8 font-semibold text-gray-500">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -597,6 +601,7 @@ export default function AdminDashboard() {
                         <TableCell className="font-medium text-gray-900">{a.nome}</TableCell>
                         <TableCell className="text-gray-500 font-mono">{a.chip}</TableCell>
                         <TableCell className="text-gray-500">{a.sex === 1 ? "Macho" : "Fêmea"}</TableCell>
+                        <TableCell className="text-gray-500">{a.colonia ? (colonias.find(c => c.id === a.colonia)?.nome ?? `#${a.colonia}`) : <span className="text-gray-300">—</span>}</TableCell>
                         <TableCell className="text-right pr-8 space-x-2" onClick={(e) => e.stopPropagation()}>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" onClick={() => { setEditItem({ ...a }); setFilesToRemove([]); }}><Pencil className="h-4 w-4" /></Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" onClick={async (e) => { e.stopPropagation(); if (!confirm("Are you sure you want to delete this animal?")) return; await fetch("/api/admin/animals", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id }) }); setAnimals((prev) => prev.filter((animal) => animal.id !== a.id)); }}><Trash2 className="h-4 w-4" /></Button>
@@ -645,6 +650,7 @@ export default function AdminDashboard() {
                         <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Chip</label><div className="text-lg font-mono">{viewItem.chip}</div></div>
                         <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Sexo</label><div className="text-lg font-medium">{viewItem.sex === 1 ? "Macho" : "Fêmea"}</div></div>
                         {viewItem.raca && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Raça</label><div className="text-lg font-medium">{viewItem.raca}</div></div>}
+                        {viewItem.colonia != null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Colónia</label><div className="text-lg font-medium">{colonias.find(c => c.id === viewItem.colonia)?.nome ?? `#${viewItem.colonia}`}</div></div>}
                         {viewItem.porte !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Porte</label><div className="text-lg font-medium">{viewItem.porte === 1 ? "Pequeno" : viewItem.porte === 2 ? "Médio" : "Grande"}</div></div>}
                         {viewItem.altura !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Altura</label><div className="text-lg font-medium">{viewItem.altura} cm</div></div>}
                         {viewItem.peso !== null && <div className="space-y-1"><label className="text-xs font-semibold text-gray-500 uppercase">Peso</label><div className="text-lg font-medium">{viewItem.peso} kg</div></div>}
