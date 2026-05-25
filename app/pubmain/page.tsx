@@ -59,7 +59,7 @@ const StatCard = ({ img, title, index }: { img: string; title: string; index: nu
 export default function Headerr() {
 
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
   const [recentAnimals, setRecentAnimals] = useState<any[]>([]);
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
@@ -81,12 +81,12 @@ export default function Headerr() {
   }, []);
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) setUsername(storedUsername);
+    const storedEmail = localStorage.getItem("email");
+    if (storedEmail) setEmail(storedEmail);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     router.push("/login");
   };
 

@@ -11,16 +11,16 @@ import Header from "@/components/Header";
 
 export default function DashDocumentos() {
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) setUsername(storedUsername);
+    const storedEmail = localStorage.getItem("email");
+    if (storedEmail) setEmail(storedEmail);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     router.push("/login");
   };
 

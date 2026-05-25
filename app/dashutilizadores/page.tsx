@@ -21,10 +21,10 @@ export default function UsersDashboard() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [permsFilter, setPermsFilter] = useState<number | null>(null);
-  const [users, setUsers] = useState<{ id: number; username: string; password: string; perms: number }[]>([]);
+  const [users, setUsers] = useState<{ id: number; email: string; password: string; perms: number }[]>([]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPerms, setNewPerms] = useState(0);
   const [createPermsOpen, setCreatePermsOpen] = useState(false);
@@ -59,7 +59,7 @@ export default function UsersDashboard() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((user) =>
-        user.username.toLowerCase().includes(query)
+        user.email.toLowerCase().includes(query)
       );
     }
 
@@ -117,13 +117,13 @@ export default function UsersDashboard() {
   };
 
   const handleCreateUser = async () => {
-    if (!newUsername || !newPassword) return alert("Fill all fields");
+    if (!newEmail || !newPassword) return alert("Fill all fields");
 
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: newUsername, password: newPassword, perms: newPerms }),
+        body: JSON.stringify({ email: newEmail, password: newPassword, perms: newPerms }),
       });
 
       if (!res.ok) {
@@ -134,7 +134,7 @@ export default function UsersDashboard() {
 
       const newUser = await res.json();
       setUsers((prev) => [...prev, newUser]);
-      setNewUsername("");
+      setNewEmail("");
       setNewPassword("");
       setNewPerms(0);
       setCreatePermsOpen(false);
@@ -146,16 +146,16 @@ export default function UsersDashboard() {
   };
 
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) setUsername(storedUsername);
+    const storedEmail = localStorage.getItem("email");
+    if (storedEmail) setEmail(storedEmail);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     router.push("/login");
   };
 
@@ -197,9 +197,9 @@ export default function UsersDashboard() {
                       </DialogHeader>
                       <div className="space-y-3 pt-2">
                         <Input
-                          placeholder="Username"
-                          value={newUsername}
-                          onChange={(e) => setNewUsername(e.target.value)}
+                          placeholder="Email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
                           className="rounded-xl border-gray-200 focus:ring-orange-500"
                         />
                         <Input
@@ -268,7 +268,7 @@ export default function UsersDashboard() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <Input
                       type="text"
-                      placeholder="Pesquisar por username..."
+                      placeholder="Pesquisar por email..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10 pr-10 rounded-xl border-gray-200 focus:ring-orange-500"
@@ -325,10 +325,10 @@ export default function UsersDashboard() {
                           {sortConfig?.key === "id" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("username")}>
+                      <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("email")}>
                         <div className="flex items-center gap-1">
                           Username
-                          {sortConfig?.key === "username" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
+                          {sortConfig?.key === "email" && <ChevronDown className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />}
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => handleSort("password")}>
@@ -357,9 +357,9 @@ export default function UsersDashboard() {
                         <TableCell className="font-medium text-gray-900">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                              {u.username.charAt(0).toUpperCase()}
+                              {u.email.charAt(0).toUpperCase()}
                             </div>
-                            {u.username}
+                            {u.email}
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-400 font-mono text-xs">••••••••</TableCell>
@@ -434,7 +434,7 @@ export default function UsersDashboard() {
                 {/* Avatar */}
                 <div className="flex justify-center">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-                    {viewItem.username.charAt(0).toUpperCase()}
+                    {viewItem.email.charAt(0).toUpperCase()}
                   </div>
                 </div>
 
@@ -446,8 +446,8 @@ export default function UsersDashboard() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Username</label>
-                    <div className="text-lg font-medium text-gray-900">{viewItem.username}</div>
+                    <
+                    <div className="text-lg font-medium text-gray-900">{viewItem.email}</div>
                   </div>
 
                   <div className="space-y-1">
@@ -512,13 +512,13 @@ export default function UsersDashboard() {
                     className="space-y-2"
                   >
                     <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <span>Username</span>
+                      <span>Email</span>
                       <span className="text-orange-500">*</span>
                     </label>
                     <Input
-                      value={editItem.username || ""}
-                      onChange={(e) => setEditItem({ ...editItem, username: e.target.value })}
-                      placeholder="Digite o username"
+                      value={editItem.email || ""}
+                      onChange={(e) => setEditItem({ ...editItem, email: e.target.value })}
+                      placeholder="Digite o email"
                       className="rounded-xl border-gray-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
                     />
                   </motion.div>

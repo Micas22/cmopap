@@ -5,7 +5,7 @@ export async function GET() {
     const users = await prisma.user.findMany({
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         perms: true,
         vaccine_notifications: true,
@@ -25,16 +25,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { username, password, perms, vaccine_notifications, report_notifications } = await req.json();
+    const { email, password, perms, vaccine_notifications, report_notifications } = await req.json();
 
-    const existingUser = await prisma.user.findUnique({ where: { username } });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return new Response(JSON.stringify({ error: "Username already exists" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Email já registado" }), { status: 400 });
     }
 
     const newUser = await prisma.user.create({
-      data: { username, password, perms: perms ?? 0, vaccine_notifications: vaccine_notifications ?? true, report_notifications: report_notifications ?? true },
-      select: { id: true, username: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
+      data: { email, password, perms: perms ?? 0, vaccine_notifications: vaccine_notifications ?? true, report_notifications: report_notifications ?? true },
+      select: { id: true, email: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
     });
 
     return new Response(JSON.stringify(newUser), { status: 201 });
@@ -46,12 +46,12 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { id, username, password, perms, vaccine_notifications, report_notifications } = await req.json();
+    const { id, email, password, perms, vaccine_notifications, report_notifications } = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { username, password, perms, vaccine_notifications, report_notifications },
-      select: { id: true, username: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
+      data: { email, password, perms, vaccine_notifications, report_notifications },
+      select: { id: true, email: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
     });
 
     return new Response(JSON.stringify(updatedUser), { status: 200 });

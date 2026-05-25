@@ -42,12 +42,12 @@ export default function DashOcorrencias() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [filter, setFilter] = useState<"all" | "open" | "resolved">("all");
   const router = useRouter();
 
   useEffect(() => {
-    const u = localStorage.getItem("username");
+    const u = localStorage.getItem("email");
     if (u) setUsername(u);
   }, []);
 
@@ -84,7 +84,7 @@ export default function DashOcorrencias() {
     fetchOcorrencias();
   };
 
-  const handleLogout = () => { localStorage.removeItem("username"); router.push("/login"); };
+  const handleLogout = () => { localStorage.removeItem("email"); router.push("/login"); };
 
   /* derived */
   const filtered = ocorrencias.filter(o =>
@@ -182,7 +182,7 @@ export default function DashOcorrencias() {
               <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/30">
                 <img src="/user.png" alt="User" className="w-full h-full object-cover" />
               </div>
-              <span className="max-w-[100px] truncate">{username || "Admin"}</span>
+              <span className="max-w-[100px] truncate">{email || "Admin"}</span>
             </button>
 
             <AnimatePresence>
@@ -195,7 +195,7 @@ export default function DashOcorrencias() {
                   className="absolute right-0 mt-3 w-52 bg-white rounded-2xl shadow-2xl p-4 z-50 border border-gray-100"
                 >
                   <p className="text-[11px] text-gray-400 uppercase tracking-widest font-semibold mb-1">Sessão iniciada</p>
-                  <p className="text-gray-800 font-semibold text-sm mb-4 truncate">{username || "Guest"}</p>
+                  <p className="text-gray-800 font-semibold text-sm mb-4 truncate">{email || "Guest"}</p>
                   <button onClick={handleLogout}
                     className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 rounded-xl transition-colors">
                     Terminar sessão

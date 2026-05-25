@@ -163,7 +163,7 @@ function OcorrenciaItem({ o }: { o: any }) {
 
 /* ────────────────────────────────────────────────────────── Main */
 export default function AdminDashboard() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"vaccines" | "ocorrencias" | "settings">("vaccines");
   const [animals, setAnimals] = useState<any[]>([]);
@@ -179,17 +179,17 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    const s = localStorage.getItem("username");
+    const s = localStorage.getItem("email");
     if (s) setUsername(s);
   }, []);
 
   useEffect(() => {
-    if (!username) return;
+    if (!email) return;
     fetch("/api/admin/users").then(r => r.ok ? r.json() : []).then((users: any[]) => {
-      const u = users.find((u: any) => u.username === username);
+      const u = users.find((u: any) => u.email === email);
       if (u) { setUserId(u.id); setVaccineToggle(u.vaccine_notifications); setReportToggle(u.report_notifications); }
     }).catch(console.error);
-  }, [username]);
+  }, [email]);
 
   useEffect(() => {
     fetch("/api/admin/animals").then(r => r.ok ? r.json() : []).then((data: any[]) => {
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <p className="text-white/60 text-sm font-medium">{greeting},</p>
               <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mt-1">
-                {username || "Utilizador"}
+                {email || "Utilizador"}
               </h1>
               <p className="text-white/50 text-sm mt-2">Painel de administração · {new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</p>
             </motion.div>

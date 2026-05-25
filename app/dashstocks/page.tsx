@@ -33,7 +33,7 @@ type Stock = {
 
 type User = {
   id: number;
-  username: string;
+  email: string;
 };
 
 export default function StocksDashboard() {
@@ -52,7 +52,7 @@ export default function StocksDashboard() {
   const [newQuantidade, setNewQuantidade] = useState("");
 
   const [showPopup, setShowPopup] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -98,19 +98,19 @@ export default function StocksDashboard() {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
       const safeUsers: User[] = Array.isArray(data)
-        ? data.map((u: any) => ({ id: u.id, username: u.username }))
+        ? data.map((u: any) => ({ id: u.id, email: u.email }))
         : [];
       setUsers(safeUsers);
       const map: Record<number, string> = {};
       safeUsers.forEach((u) => {
-        map[u.id] = u.username;
+        map[u.id] = u.email;
       });
       setUserMap(map);
 
-      const storedUsername = localStorage.getItem("username");
-      if (storedUsername) {
-        setUsername(storedUsername);
-        const found = safeUsers.find((u) => u.username === storedUsername);
+      const storedEmail = localStorage.getItem("email");
+      if (storedEmail) {
+        setEmail(storedEmail);
+        const found = safeUsers.find((u) => u.email === storedUsername);
         if (found) {
           setCurrentUserId(found.id);
         }
@@ -136,7 +136,7 @@ export default function StocksDashboard() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     router.push("/login");
   };
 

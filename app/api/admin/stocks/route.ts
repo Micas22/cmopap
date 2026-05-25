@@ -89,10 +89,10 @@ export async function GET(request: Request) {
         if (filters.user) {
 
           const allUsers = await prisma.user.findMany();
-          const userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.username]));
+          const userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.email]));
           stocks = stocks.filter(stock => {
-            const username = userMap[stock.utilizador];
-            return username && username.toLowerCase().includes(filters.user.toLowerCase());
+            const userEmail = userMap[stock.utilizador];
+            return userEmail && userEmail.toLowerCase().includes(filters.user.toLowerCase());
           });
         }
       } catch (e) {
@@ -152,7 +152,7 @@ if (format === "pdf") {
   try {
 
     const allUsers = await prisma.user.findMany();
-    userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.username]));
+    userMap = Object.fromEntries(allUsers.map((u: any) => [u.id, u.email]));
   } catch (e) {
     console.error("Error fetching users for PDF:", e);
   }
