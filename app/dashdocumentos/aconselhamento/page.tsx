@@ -40,8 +40,12 @@ export default function AconselhamentosPage() {
 
   useEffect(() => {
     const u = localStorage.getItem("email");
-    if (u) setEmail(u);
-  }, []);
+    if (u) {
+      setEmail(u);
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
   const [formData, setFormData] = useState({
     data: "",
     nome: "",

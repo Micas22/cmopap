@@ -180,8 +180,12 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const s = localStorage.getItem("email");
-    if (s) setEmail(s);
-  }, []);
+    if (s) {
+      setEmail(s);
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
 
   useEffect(() => {
     if (!email) return;

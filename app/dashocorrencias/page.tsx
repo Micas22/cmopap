@@ -48,8 +48,12 @@ export default function DashOcorrencias() {
 
   useEffect(() => {
     const u = localStorage.getItem("email");
-    if (u) setEmail(u);
-  }, []);
+    if (u) {
+      setEmail(u);
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
 
   useEffect(() => { fetchOcorrencias(); }, []);
 

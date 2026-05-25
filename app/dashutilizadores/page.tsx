@@ -151,8 +151,12 @@ export default function UsersDashboard() {
 
   useEffect(() => {
     const storedEmail = localStorage.getItem("email");
-    if (storedEmail) setEmail(storedEmail);
-  }, []);
+    if (storedEmail) {
+      setEmail(storedEmail);
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("email");

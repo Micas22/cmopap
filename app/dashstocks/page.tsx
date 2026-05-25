@@ -114,6 +114,8 @@ export default function StocksDashboard() {
         if (found) {
           setCurrentUserId(found.id);
         }
+      } else {
+        router.push("/login");
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);
