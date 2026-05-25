@@ -126,11 +126,11 @@ export default function Page() {
   }, []);
 
   const statItems: [string, string, number][] = [
-    ["ativo1.png", "Residentes", stats.residentes],
-    ["ativo4.png", "Em Colónias", stats.colonias],
-    ["ativo5.png", "Esterilizados", stats.esterilizados],
-    ["ativo6.png", "Errantes", stats.errantes],
-    ["ativo7.png", "Acolhimento", stats.acolhimento],
+    ["Ativo1.png", "Residentes", stats.residentes],
+    ["Ativo4.png", "Em Colónias", stats.colonias],
+    ["Ativo5.png", "Esterilizados", stats.esterilizados],
+    ["Ativo6.png", "Errantes", stats.errantes],
+    ["Ativo7.png", "Acolhimento", stats.acolhimento],
   ];
 
   return (
