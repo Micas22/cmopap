@@ -31,7 +31,7 @@ model Animal {
   data_ultima_vacina  DateTime?         @map("data_ultima_vacina")
   data_proxima_vacina DateTime?         @map("data_proxima_vacina")
   arquivos            String?
-  aconselhamentos     aconselhamentos[]
+  Aconselhamentos     Aconselhamentos[]
   colonia             Int?
 }
 
@@ -93,7 +93,7 @@ model AnimalHistory {
   animalid   BigInt?
 }
 
-model aconselhamentos {
+model Aconselhamentos {
   id            BigInt   @id @default(autoincrement())
   data          DateTime @db.Date
   nome          String?

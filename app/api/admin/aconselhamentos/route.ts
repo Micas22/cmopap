@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 function serializeBigInt(obj: any): any {
+  if (obj instanceof Date) return obj.toISOString();
   if (typeof obj === "object" && obj !== null) {
     if (Array.isArray(obj)) {
       return obj.map(serializeBigInt);
@@ -42,9 +43,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { data, nome, animal, motivo, administracao, feedback, local } = body;
 
-    if (!data || !nome || !motivo) {
+    if (!data || !motivo) {
       return NextResponse.json(
-        { error: "Data, nome and motivo are required" },
+        { error: "Data and motivo are required" },
         { status: 400 }
       );
     }

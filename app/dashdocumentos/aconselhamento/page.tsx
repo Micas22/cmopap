@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquareHeart, Plus, Search, Pencil, Trash2, ChevronDown,
-  Check, ArrowLeft, X, AlertTriangle, Calendar, Clock, MapPin,
+  Check, ArrowLeft, X, AlertTriangle, Calendar, MapPin,
   User, Activity, Filter, PawPrint, FileDown, Download,
   ClipboardList, ChevronRight, Eye, MessageCircle, SortDesc, SortAsc,
 } from "lucide-react";
@@ -18,11 +18,11 @@ import Header from "@/components/Header";
    TYPES
 ───────────────────────────────────────────────────────────────────────────── */
 type Animal = { id: number; nome: string; chip: string };
+type Colonia = { id: number; nome: string };
 
 type Aconselhamento = {
   id: number;
   data: string;
-  hora: string;
   animal_id: number | null;
   animal_exterior: string;
   motivo: string;
@@ -30,27 +30,6 @@ type Aconselhamento = {
   feedback: string;
   local: string;
 };
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   MOCK DATA
-───────────────────────────────────────────────────────────────────────────── */
-const MOCK_ANIMALS: Animal[] = [
-  { id: 1, nome: "Bolinha", chip: "941000024680001" },
-  { id: 2, nome: "Mel", chip: "941000024680002" },
-  { id: 3, nome: "Thor", chip: "941000024680003" },
-  { id: 4, nome: "Luna", chip: "941000024680004" },
-  { id: 5, nome: "Simba", chip: "941000024680005" },
-];
-
-const MOCK_RECORDS: Aconselhamento[] = [
-  { id: 1, data: "2025-05-10", hora: "09:30", animal_id: 1, animal_exterior: "", motivo: "Comportamento agressivo com outros animais durante passeio", administracao: "Dr. Carvalho", feedback: "Animal apresentou melhoria após sessão. Recomendada continuação do treino de socialização por mais 3 semanas.", local: "Clínica Central" },
-  { id: 2, data: "2025-05-12", hora: "14:00", animal_id: null, animal_exterior: "Gato ruivo (colónia rua das Flores)", motivo: "Avaliação pós-cirurgia de esterilização", administracao: "Dra. Santos", feedback: "Recuperação dentro do esperado. Sem complicações visíveis.", local: "Posto Móvel Norte" },
-  { id: 3, data: "2025-05-15", hora: "11:15", animal_id: 3, animal_exterior: "", motivo: "Desparasitação + check-up geral", administracao: "Dr. Ferreira", feedback: "Sem observações relevantes. Animal em boa condição.", local: "Clínica Central" },
-  { id: 4, data: "2025-05-18", hora: "16:45", animal_id: 4, animal_exterior: "", motivo: "Controlo de peso e avaliação nutricional", administracao: "Dra. Costa", feedback: "Dieta prescrita para 30 dias. Reavaliação agendada.", local: "Sede" },
-  { id: 5, data: "2025-05-20", hora: "10:00", animal_id: 2, animal_exterior: "", motivo: "Vacinação anual", administracao: "Dr. Carvalho", feedback: "Todas as vacinas administradas com sucesso. Próxima dose em 12 meses.", local: "Clínica Central" },
-];
-
-const LOCAIS = ["Clínica Central", "Posto Móvel Norte", "Posto Móvel Sul", "Sede", "Casa do Tutor", "Outro"];
 
 /* ─────────────────────────────────────────────────────────────────────────────
    SHARED PRIMITIVES
@@ -126,7 +105,6 @@ function DropdownField<T extends string | number>({
 ───────────────────────────────────────────────────────────────────────────── */
 const emptyForm = (): Omit<Aconselhamento, "id"> => ({
   data: new Date().toISOString().slice(0, 10),
-  hora: new Date().toTimeString().slice(0, 5),
   animal_id: null,
   animal_exterior: "",
   motivo: "",
@@ -141,25 +119,32 @@ const formatDate = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
-const localAccent = (local: string): string => {
-  const map: Record<string, string> = {
-    "Clínica Central": "bg-blue-50 text-blue-600",
-    "Posto Móvel Norte": "bg-emerald-50 text-emerald-600",
-    "Posto Móvel Sul": "bg-teal-50 text-teal-600",
-    "Sede": "bg-violet-50 text-violet-600",
-    "Casa do Tutor": "bg-amber-50 text-amber-600",
-  };
-  return map[local] ?? "bg-gray-100 text-gray-500";
+const ACCENT_PALETTE = [
+  "bg-blue-50 text-blue-600",
+  "bg-emerald-50 text-emerald-600",
+  "bg-teal-50 text-teal-600",
+  "bg-violet-50 text-violet-600",
+  "bg-amber-50 text-amber-600",
+  "bg-rose-50 text-rose-600",
+  "bg-indigo-50 text-indigo-600",
+  "bg-cyan-50 text-cyan-600",
+];
+
+const localAccent = (local: string, colonias: Colonia[]): string => {
+  const idx = colonias.findIndex(c => c.nome === local);
+  if (idx === -1) return "bg-gray-100 text-gray-500";
+  return ACCENT_PALETTE[idx % ACCENT_PALETTE.length];
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ENTRY CARD
 ───────────────────────────────────────────────────────────────────────────── */
 function EntryCard({
-  record, animals, onEdit, onDelete, onView,
+  record, animals, colonias, onEdit, onDelete, onView,
 }: {
   record: Aconselhamento;
   animals: Animal[];
+  colonias: Colonia[];
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
@@ -198,10 +183,6 @@ function EntryCard({
                 {new Date(record.data + "T00:00:00").toLocaleDateString("pt-PT", { weekday: "long", year: "numeric" })}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="flex items-center gap-1 text-sm font-bold text-gray-700">
-                  <Clock className="w-3.5 h-3.5 text-gray-300" />{record.hora}
-                </span>
-                <span className="text-gray-200">·</span>
                 <span className="text-xs text-gray-300 font-mono">#{record.id}</span>
               </div>
             </div>
@@ -223,13 +204,29 @@ function EntryCard({
 
         {/* Pill row */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${isDB ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"}`}>
-            <PawPrint className="w-3.5 h-3.5" />{animalName}
-            {!isDB && <span className="text-[10px] font-medium opacity-60 ml-0.5">exterior</span>}
-          </span>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(record.local)}`}>
-            <MapPin className="w-3 h-3" />{record.local || "—"}
-          </span>
+          {isDB ? (
+            <Link href="/dashanimais"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors underline-offset-2`}
+              title="Ver animal na base de dados">
+              <PawPrint className="w-3.5 h-3.5" />{animalName}
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-600">
+              <PawPrint className="w-3.5 h-3.5" />{animalName}
+              <span className="text-[10px] font-medium opacity-60 ml-0.5">exterior</span>
+            </span>
+          )}
+          {colonias.find(c => c.nome === record.local) ? (
+            <Link href="/dashcolonias"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(record.local, colonias)} hover:opacity-80 transition-opacity`}
+              title="Ver colónia">
+              <MapPin className="w-3 h-3" />{record.local}
+            </Link>
+          ) : (
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(record.local, colonias)}`}>
+              <MapPin className="w-3 h-3" />{record.local || "—"}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-50 text-gray-500">
             <User className="w-3 h-3" />{record.administracao || "—"}
           </span>
@@ -268,29 +265,24 @@ function EntryCard({
    FORM BODY
 ───────────────────────────────────────────────────────────────────────────── */
 function FormBody({
-  data, setData, mode, setMode, animals,
+  data, setData, mode, setMode, animals, colonias,
 }: {
   data: Omit<Aconselhamento, "id"> & { id?: number };
   setData: (v: any) => void;
   mode: "db" | "exterior";
   setMode: (v: "db" | "exterior") => void;
   animals: Animal[];
+  colonias: Colonia[];
 }) {
   const animalOptions = animals.map(a => ({ label: `${a.nome} · ${a.chip}`, value: a.id }));
-  const localOptions = LOCAIS.map(l => ({ label: l, value: l }));
+  const localOptions = colonias.map(c => ({ label: c.nome, value: c.nome }));
 
   return (
     <div className="px-6 py-5 space-y-5 overflow-y-auto max-h-[68vh]">
       <ModalSection title="Identificação" icon={Calendar}>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel required>Data</FieldLabel>
-            <Input type="date" value={data.data} onChange={e => setData({ ...data, data: e.target.value })} className={inputCls} />
-          </div>
-          <div>
-            <FieldLabel required>Hora</FieldLabel>
-            <Input type="time" value={data.hora} onChange={e => setData({ ...data, hora: e.target.value })} className={inputCls} />
-          </div>
+        <div>
+          <FieldLabel required>Data</FieldLabel>
+          <Input type="date" value={data.data} onChange={e => setData({ ...data, data: e.target.value })} className={inputCls} />
         </div>
       </ModalSection>
 
@@ -351,8 +343,45 @@ function FormBody({
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 export default function Aconselhamentos() {
-  const [records, setRecords] = useState<Aconselhamento[]>(MOCK_RECORDS);
-  const [animals] = useState<Animal[]>(MOCK_ANIMALS);
+  const [records, setRecords] = useState<Aconselhamento[]>([]);
+  const [animals, setAnimals] = useState<Animal[]>([]);
+  const [colonias, setColonias] = useState<Colonia[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [resA, resAnim, resCol] = await Promise.all([
+          fetch("/api/admin/aconselhamentos"),
+          fetch("/api/admin/animals"),
+          fetch("/api/admin/colonias"),
+        ]);
+        if (resA.ok && resAnim.ok && resCol.ok) {
+          const dataA = await resA.json();
+          const dataAnim = await resAnim.json();
+          const dataCol = await resCol.json();
+
+          setAnimals(dataAnim);
+          setColonias(dataCol);
+          setRecords(dataA.map((item: any) => ({
+            id: Number(item.id),
+            data: item.data ? item.data.split("T")[0] : "",
+            animal_id: item.animal || null,
+            animal_exterior: item.nome || "",
+            motivo: item.motivo || "",
+            administracao: item.administracao || "",
+            feedback: item.feedback || "",
+            local: item.local || "",
+          })));
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [localFilter, setLocalFilter] = useState<string | null>(null);
@@ -389,7 +418,7 @@ export default function Aconselhamentos() {
     }
     if (localFilter) d = d.filter(r => r.local === localFilter);
     d.sort((a, b) => {
-      const cmp = (a.data + a.hora).localeCompare(b.data + b.hora);
+      const cmp = a.data.localeCompare(b.data);
       return sortDir === "desc" ? -cmp : cmp;
     });
     return d;
@@ -405,29 +434,84 @@ export default function Aconselhamentos() {
     return [...map.entries()];
   }, [filtered]);
 
-  const handleCreate = () => {
-    const newId = Math.max(0, ...records.map(r => r.id)) + 1;
-    setRecords(p => [{ id: newId, ...form, animal_id: animalMode === "db" ? form.animal_id : null, animal_exterior: animalMode === "exterior" ? form.animal_exterior : "" }, ...p]);
-    setCreateOpen(false);
-    setForm(emptyForm());
-    setAnimalMode("db");
+  const handleCreate = async () => {
+    const payload = {
+      data: form.data,
+      nome: animalMode === "exterior" ? form.animal_exterior : null,
+      animal: animalMode === "db" ? form.animal_id : null,
+      motivo: form.motivo,
+      administracao: form.administracao,
+      feedback: form.feedback,
+      local: form.local,
+    };
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const newItem = await res.json();
+        setRecords(p => [{
+          id: Number(newItem.id),
+          data: newItem.data ? newItem.data.split("T")[0] : form.data,
+          animal_id: newItem.animal || null,
+          animal_exterior: newItem.nome || "",
+          motivo: newItem.motivo || "",
+          administracao: newItem.administracao || "",
+          feedback: newItem.feedback || "",
+          local: newItem.local || "",
+        }, ...p]);
+        setCreateOpen(false);
+        setForm(emptyForm());
+        setAnimalMode("db");
+      }
+    } catch (e) { console.error(e); }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editItem) return;
-    setRecords(p => p.map(r => r.id === editItem.id ? { ...editItem } : r));
-    setEditItem(null);
+    const payload = {
+      id: editItem.id,
+      data: editItem.data,
+      nome: animalMode === "exterior" ? editItem.animal_exterior : null,
+      animal: animalMode === "db" ? editItem.animal_id : null,
+      motivo: editItem.motivo,
+      administracao: editItem.administracao,
+      feedback: editItem.feedback,
+      local: editItem.local,
+    };
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setRecords(p => p.map(r => r.id === editItem.id ? { ...editItem } : r));
+        setEditItem(null);
+      }
+    } catch (e) { console.error(e); }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteConfirmId == null) return;
-    setRecords(p => p.filter(r => r.id !== deleteConfirmId));
-    setDeleteConfirmId(null);
+    try {
+      const res = await fetch("/api/admin/aconselhamentos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteConfirmId }),
+      });
+      if (res.ok) {
+        setRecords(p => p.filter(r => r.id !== deleteConfirmId));
+        setDeleteConfirmId(null);
+      }
+    } catch (e) { console.error(e); }
   };
 
   const exportCSV = () => {
-    const headers = ["ID", "Data", "Hora", "Animal", "Motivo", "Administração", "Feedback", "Local"];
-    const rows = filtered.map(r => [r.id, formatDate(r.data), r.hora, animalName(r), r.motivo, r.administracao, r.feedback, r.local]);
+    const headers = ["ID", "Data", "Animal", "Motivo", "Administração", "Feedback", "Local"];
+    const rows = filtered.map(r => [r.id, formatDate(r.data), animalName(r), r.motivo, r.administracao, r.feedback, r.local]);
     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `aconselhamentos_${new Date().toISOString().slice(0, 10)}.csv` });
@@ -435,7 +519,7 @@ export default function Aconselhamentos() {
   };
 
   const isCreateValid =
-    form.data && form.hora && form.motivo.trim() && form.local && form.administracao.trim() &&
+    form.data && form.motivo.trim() && form.local && form.administracao.trim() &&
     (animalMode === "db" ? form.animal_id !== null : form.animal_exterior.trim());
 
   const isEditValid = editItem &&
@@ -562,7 +646,7 @@ export default function Aconselhamentos() {
                     <div className="space-y-3">
                       <AnimatePresence>
                         {items.map(r => (
-                          <EntryCard key={r.id} record={r} animals={animals}
+                          <EntryCard key={r.id} record={r} animals={animals} colonias={colonias}
                             onEdit={() => { setEditItem({ ...r }); setAnimalMode(r.animal_id !== null ? "db" : "exterior"); }}
                             onDelete={() => setDeleteConfirmId(r.id)}
                             onView={() => setViewItem(r)}
@@ -592,7 +676,7 @@ export default function Aconselhamentos() {
               </div>
             </div>
           </div>
-          <FormBody data={form} setData={setForm} mode={animalMode} setMode={setAnimalMode} animals={animals} />
+          <FormBody data={form} setData={setForm} mode={animalMode} setMode={setAnimalMode} animals={animals} colonias={colonias} />
           <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex gap-3">
             <Button onClick={handleCreate} disabled={!isCreateValid}
               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 font-bold disabled:opacity-40">
@@ -619,7 +703,7 @@ export default function Aconselhamentos() {
           </div>
           {editItem && (
             <>
-              <FormBody data={editItem} setData={setEditItem} mode={animalMode} setMode={setAnimalMode} animals={animals} />
+              <FormBody data={editItem} setData={setEditItem} mode={animalMode} setMode={setAnimalMode} animals={animals} colonias={colonias} />
               <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex gap-3">
                 <Button onClick={handleUpdate} disabled={!isEditValid}
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 font-bold disabled:opacity-40">
@@ -654,23 +738,38 @@ export default function Aconselhamentos() {
                     <p className="text-white/70 text-sm mt-0.5">
                       {new Date(viewItem.data + "T00:00:00").toLocaleDateString("pt-PT", { day: "numeric", month: "long", year: "numeric" })}
                     </p>
-                    <span className="flex items-center gap-1 text-white/90 text-sm font-bold mt-1">
-                      <Clock className="w-3.5 h-3.5" />{viewItem.hora}
-                      <span className="text-white/40 ml-1">· #{viewItem.id}</span>
-                    </span>
+                    <span className="text-white/60 text-sm mt-1">#{viewItem.id}</span>
                   </div>
                 </div>
               </div>
 
               <div className="px-6 py-5 space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${viewItem.animal_id !== null ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-600"}`}>
-                    <PawPrint className="w-3.5 h-3.5" />{animalName(viewItem)}
-                    {viewItem.animal_id === null && <span className="opacity-60 ml-0.5">exterior</span>}
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(viewItem.local)}`}>
-                    <MapPin className="w-3 h-3" />{viewItem.local || "—"}
-                  </span>
+                  {viewItem.animal_id !== null ? (
+                    <Link href="/dashanimais"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+                      title="Ver animal na base de dados"
+                      onClick={() => setViewItem(null)}>
+                      <PawPrint className="w-3.5 h-3.5" />{animalName(viewItem)}
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-600">
+                      <PawPrint className="w-3.5 h-3.5" />{animalName(viewItem)}
+                      <span className="opacity-60 ml-0.5">exterior</span>
+                    </span>
+                  )}
+                  {colonias.find(c => c.nome === viewItem.local) ? (
+                    <Link href="/dashcolonias"
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(viewItem.local, colonias)} hover:opacity-80 transition-opacity`}
+                      title="Ver colónia"
+                      onClick={() => setViewItem(null)}>
+                      <MapPin className="w-3 h-3" />{viewItem.local}
+                    </Link>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${localAccent(viewItem.local, colonias)}`}>
+                      <MapPin className="w-3 h-3" />{viewItem.local || "—"}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-600">
                     <User className="w-3 h-3" />{viewItem.administracao || "—"}
                   </span>
