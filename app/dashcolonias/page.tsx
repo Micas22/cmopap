@@ -858,7 +858,8 @@ export default function AdminDashboard() {
                         {animals.map((animal) => (
                           <div
                             key={animal.id}
-                            className="flex items-center justify-between bg-gray-50 hover:bg-orange-50/40 transition-colors rounded-xl px-4 py-2.5"
+                            onClick={() => router.push(`/dashanimais?view=${animal.id}`)}
+                            className="flex items-center justify-between bg-gray-50 hover:bg-orange-50/40 transition-colors rounded-xl px-4 py-2.5 cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-7 h-7 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center shrink-0">

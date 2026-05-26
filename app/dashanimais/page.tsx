@@ -200,6 +200,23 @@ export default function AdminAnimais() {
     if (!e) router.push("/login");
   }, [router]);
 
+  // Open modal automatically if ?view=id is in the URL
+  useEffect(() => {
+    if (animals.length > 0 && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const viewId = params.get("view");
+      if (viewId) {
+        const idNum = parseInt(viewId, 10);
+        const animal = animals.find(a => a.id === idNum);
+        if (animal && !viewItem) {
+          handleViewAnimal(animal);
+          // Optional: clear the url param so refreshing doesn't keep opening it
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
+    }
+  }, [animals, viewItem]);
+
   /* ── derived counts ── */
   const coloniasWithCount = colonias.map(c => ({
     ...c,

@@ -6,7 +6,20 @@ export async function GET(request: Request) {
     const colonias = await prisma.colonia.findMany({
       orderBy: { id: "desc" },
     });
-    return NextResponse.json(colonias);
+
+    const coloniasWithCounts = await Promise.all(
+      colonias.map(async (colonia) => {
+        const count = await prisma.animal.count({
+          where: { colonia: colonia.id },
+        });
+        return {
+          ...colonia,
+          num_animais: count,
+        };
+      })
+    );
+
+    return NextResponse.json(coloniasWithCounts);
   } catch (error) {
     console.error("Error fetching colonias:", error);
     return NextResponse.json(
