@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const altura = formData.get("altura") ? Number(formData.get("altura")) : null;
     const peso = formData.get("peso") ? Number(formData.get("peso")) : null;
     const esterelizacao = formData.get("esterelizacao") ? Number(formData.get("esterelizacao")) : null;
-    const observações = formData.get("observações") as string | null;
+    const observacoes = formData.get("observacoes") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
     const coloniaRaw = formData.get("colonia") as string | null;
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         peso,
         esterelizacao,
         ...(imagePath ? { image: imagePath } : {}),
-        ...(observações ? { observacoes: observações } : {}),
+        ...(observacoes ? { observacoes } : {}),
         ...(data_ultima_vacina ? { data_ultima_vacina: new Date(data_ultima_vacina) } : {}),
         ...(data_proxima_vacina ? { data_proxima_vacina: new Date(data_proxima_vacina) } : {}),
         ...(coloniaRaw ? { colonia: Number(coloniaRaw) } : {}),
@@ -135,7 +135,7 @@ export async function PUT(request: Request) {
     const alturaRaw = formData.get("altura") as string | null;
     const pesoRaw = formData.get("peso") as string | null;
     const esterelizacaoRaw = formData.get("esterelizacao") as string | null;
-    const observações = formData.get("observações") as string | null;
+    const observacoes = formData.get("observacoes") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
     const coloniaRaw = formData.get("colonia") as string | null;
@@ -161,7 +161,7 @@ export async function PUT(request: Request) {
     data.altura = Number(alturaRaw);
     data.peso = Number(pesoRaw);
     data.esterelizacao = Number(esterelizacaoRaw);
-    if (observações !== null) data.observacoes = observações || null;
+    if (observacoes !== null) data.observacoes = observacoes || null;
     if (coloniaRaw !== null) data.colonia = coloniaRaw ? Number(coloniaRaw) : null;
     if (data_ultima_vacina) data.data_ultima_vacina = new Date(data_ultima_vacina);
     if (data_proxima_vacina) data.data_proxima_vacina = new Date(data_proxima_vacina);

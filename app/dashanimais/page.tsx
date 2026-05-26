@@ -123,7 +123,7 @@ export default function AdminAnimais() {
   type Animal = {
     id: number; nome: string; chip: string; sex: number; image?: string;
     raca?: string; porte?: number; altura?: number; peso?: number;
-    esterelizacao?: number; observações?: string; arquivos?: string;
+    esterelizacao?: number; observacoes?: string; arquivos?: string;
     colonia?: number | null; data_ultima_vacina?: string; data_proxima_vacina?: string;
   };
   type Colonia = { id: number; nome: string; animalCount?: number };
@@ -167,7 +167,7 @@ export default function AdminAnimais() {
   const [newAnimalAltura, setNewAnimalAltura] = useState("");
   const [newAnimalPeso, setNewAnimalPeso] = useState("");
   const [newAnimalEsterelizacao, setNewAnimalEsterelizacao] = useState<number | null>(null);
-  const [newAnimalObservações, setNewAnimalObservações] = useState("");
+  const [newAnimalObservacoes, setNewAnimalObservacoes] = useState("");
   const [newAnimalDataUltimaVacina, setNewAnimalDataUltimaVacina] = useState("");
   const [newAnimalDataProximaVacina, setNewAnimalDataProximaVacina] = useState("");
   const [createSexOpen, setCreateSexOpen] = useState(false);
@@ -313,7 +313,7 @@ export default function AdminAnimais() {
         if (!["image", "deleteImage", "arquivos", "clearArquivos"].includes(k)) {
           const v = editItem[k];
           if (v !== null && v !== undefined && v !== "") fd.append(k, String(v));
-          else if (["raca", "observações", "porte", "altura", "peso", "esterelizacao", "colonia"].includes(k)) fd.append(k, "");
+          else if (["raca", "observacoes", "porte", "altura", "peso", "esterelizacao", "colonia"].includes(k)) fd.append(k, "");
           else if (v != null) fd.append(k, String(v));
         }
       });
@@ -363,7 +363,7 @@ export default function AdminAnimais() {
       if (newAnimalAltura) fd.append("altura", newAnimalAltura);
       if (newAnimalPeso) fd.append("peso", newAnimalPeso);
       if (newAnimalEsterelizacao !== null) fd.append("esterelizacao", String(newAnimalEsterelizacao));
-      if (newAnimalObservações) fd.append("observações", newAnimalObservações);
+      if (newAnimalObservacoes) fd.append("observacoes", newAnimalObservacoes);
       if (newAnimalColonia !== null) fd.append("colonia", String(newAnimalColonia));
       if (newAnimalDataUltimaVacina) fd.append("data_ultima_vacina", newAnimalDataUltimaVacina);
       if (newAnimalDataProximaVacina) fd.append("data_proxima_vacina", newAnimalDataProximaVacina);
@@ -373,7 +373,7 @@ export default function AdminAnimais() {
       const n = await r.json(); setAnimals(p => [...p, n]);
       setNewAnimalNome(""); setNewAnimalChip(""); setNewAnimalSex(1); setNewAnimalRaca("");
       setNewAnimalPorte(null); setNewAnimalAltura(""); setNewAnimalPeso(""); setNewAnimalEsterelizacao(null);
-      setNewAnimalObservações(""); setNewAnimalDataUltimaVacina(""); setNewAnimalDataProximaVacina("");
+      setNewAnimalObservacoes(""); setNewAnimalDataUltimaVacina(""); setNewAnimalDataProximaVacina("");
       setNewAnimalImage(null); setNewAnimalImagePreview(null); setNewAnimalArquivos(null); setNewAnimalColonia(null);
       setCreateAnimalDialogOpen(false);
     } catch (e) { console.error(e); alert("Erro ao criar animal."); }
@@ -519,7 +519,7 @@ export default function AdminAnimais() {
 
                   <ModalSection title="Notas & Média" icon={FileText}>
                     <textarea placeholder="Observações sobre o animal…"
-                      value={newAnimalObservações} onChange={e => setNewAnimalObservações(e.target.value)}
+                      value={newAnimalObservacoes} onChange={e => setNewAnimalObservacoes(e.target.value)}
                       className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:border-orange-300 outline-none resize-none transition-colors"
                       rows={3} />
 
@@ -882,10 +882,10 @@ export default function AdminAnimais() {
                             )}
                           </div>
 
-                          {viewItem.observações && (
+                          {viewItem.observacoes && (
                             <div>
                               <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Observações</p>
-                              <p className="text-sm text-gray-600 bg-orange-50/60 border border-orange-100 px-4 py-3.5 rounded-2xl whitespace-pre-wrap leading-relaxed">{viewItem.observações}</p>
+                              <p className="text-sm text-gray-600 bg-orange-50/60 border border-orange-100 px-4 py-3.5 rounded-2xl whitespace-pre-wrap leading-relaxed">{viewItem.observacoes}</p>
                             </div>
                           )}
 
@@ -1100,7 +1100,7 @@ export default function AdminAnimais() {
                   <div className="border-t border-dashed border-gray-100" />
 
                   <ModalSection title="Notas" icon={FileText}>
-                    <textarea value={editItem.observações || ""} onChange={e => setEditItem({ ...editItem, observações: e.target.value })}
+                    <textarea value={editItem.observacoes || ""} onChange={e => setEditItem({ ...editItem, observacoes: e.target.value })}
                       className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:border-orange-300 outline-none resize-none transition-colors leading-relaxed"
                       rows={3} placeholder="Observações sobre o animal…" />
                   </ModalSection>
