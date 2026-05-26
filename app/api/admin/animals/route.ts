@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const observações = formData.get("observações") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
+    const coloniaRaw = formData.get("colonia") as string | null;
     const arquivos = formData.getAll("arquivos") as File[];
 
     let imagePath = null;
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
         ...(observações ? { observacoes: observações } : {}),
         ...(data_ultima_vacina ? { data_ultima_vacina: new Date(data_ultima_vacina) } : {}),
         ...(data_proxima_vacina ? { data_proxima_vacina: new Date(data_proxima_vacina) } : {}),
+        ...(coloniaRaw ? { colonia: Number(coloniaRaw) } : {}),
         ...(arquivosPath ? { arquivos: arquivosPath } : {}),
       } as any,
     });
@@ -136,6 +138,7 @@ export async function PUT(request: Request) {
     const observações = formData.get("observações") as string | null;
     const data_ultima_vacina = formData.get("data_ultima_vacina") as string | null;
     const data_proxima_vacina = formData.get("data_proxima_vacina") as string | null;
+    const coloniaRaw = formData.get("colonia") as string | null;
     const arquivos = formData.get("arquivos") as File | null;
 
     if (!id) {
@@ -159,6 +162,7 @@ export async function PUT(request: Request) {
     data.peso = Number(pesoRaw);
     data.esterelizacao = Number(esterelizacaoRaw);
     if (observações !== null) data.observacoes = observações || null;
+    if (coloniaRaw !== null) data.colonia = coloniaRaw ? Number(coloniaRaw) : null;
     if (data_ultima_vacina) data.data_ultima_vacina = new Date(data_ultima_vacina);
     if (data_proxima_vacina) data.data_proxima_vacina = new Date(data_proxima_vacina);
 

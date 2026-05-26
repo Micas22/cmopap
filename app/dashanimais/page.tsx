@@ -254,7 +254,7 @@ export default function AdminDashboard() {
         if (key !== "image" && key !== "deleteImage" && key !== "arquivos" && key !== "clearArquivos") {
           const v = editItem[key];
           if (v !== null && v !== undefined && v !== "") formData.append(key, String(v));
-          else if (["raca", "observações", "porte", "altura", "peso", "esterelizacao"].includes(key)) formData.append(key, "");
+          else if (["raca", "observações", "porte", "altura", "peso", "esterelizacao", "colonia"].includes(key)) formData.append(key, "");
           else if (v !== null && v !== undefined) formData.append(key, String(v));
         }
       });
