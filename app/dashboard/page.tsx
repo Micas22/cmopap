@@ -208,6 +208,9 @@ export default function AdminDashboard() {
     fetch("/api/admin/ocorrencias").then(r => r.ok ? r.json() : []).then((data: any[]) => {
       setOcorrenciaNotifs(data.filter((o: any) => !o.data_resolucao));
     }).catch(console.error);
+
+    // Trigger daily check for vaccines to generate email notifications
+    fetch("/api/admin/check-vaccines").catch(console.error);
   }, []);
 
   useEffect(() => { if (vaccineNotifs.length > 0 && vaccineToggle) setShowVaccinePopup(true); }, [vaccineNotifs, vaccineToggle]);

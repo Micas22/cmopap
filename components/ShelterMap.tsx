@@ -341,7 +341,7 @@ export default function ShelterMap() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[999] cursor-crosshair pointer-events-auto"
+              className="absolute inset-0 z-[999] cursor-crosshair pointer-events-none"
             >
               {/* Dimmed border */}
               <div className="absolute inset-0 ring-inset ring-4 ring-blue-500/30 pointer-events-none" />
@@ -350,7 +350,7 @@ export default function ShelterMap() {
                 initial={{ y: -16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -16, opacity: 0 }}
-                className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2.5 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-xl shadow-blue-900/25 select-none"
+                className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2.5 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-xl shadow-blue-900/25 select-none pointer-events-auto"
               >
                 <Crosshair size={14} className="animate-pulse" />
                 Clique no mapa para selecionar a localização

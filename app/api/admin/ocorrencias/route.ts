@@ -20,6 +20,8 @@ export async function GET(request: Request) {
   }
 }
 
+import { sendNotificationEmail } from "@/lib/email";
+
 export async function POST(request: Request) {
   try {
     const { titulo, descricao, morada, data_criacao, data_resolucao, estado } = await request.json();
@@ -41,6 +43,41 @@ export async function POST(request: Request) {
         estado: Number(estado),
       },
     });
+
+    // --- Notifications logic ---
+    // Fetch admins with report_notifications enabled
+    const admins = await prisma.user.findMany({
+      where: { perms: 1, report_notifications: true },
+    });
+
+    if (admins.length > 0) {
+      // Create DB notifications for each admin
+      const notificationData = admins.map((admin: any) => ({
+        userId: admin.id,
+        type: "warning",
+        title: "Nova Ocorrência Registada",
+        description: `Ocorrência "${titulo}" foi criada.`,
+        dataAndTime: new Date(),
+        read: false,
+      }));
+
+      await prisma.notification.createMany({
+        data: notificationData,
+      });
+
+      // Send emails
+      const adminEmails = admins.map((admin: any) => admin.email).filter(Boolean);
+      await sendNotificationEmail(
+        adminEmails,
+        "Nova Ocorrência Registada – CROA Olhão",
+        "Nova Ocorrência",
+        `<p>Uma nova ocorrência foi registada na plataforma:</p>
+         <p><strong>Título:</strong> ${titulo}<br/>
+         <strong>Morada:</strong> ${morada}</p>
+         <p>Pode ver mais detalhes no seu dashboard.</p>`
+      );
+    }
+    // ---------------------------
 
     return NextResponse.json(newOcorrencia, { status: 201 });
   } catch (error) {

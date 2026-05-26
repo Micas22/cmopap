@@ -78,7 +78,7 @@ export default function Header() {
     setNotifLoading(true);
     setNotifError(false);
     try {
-      const res = await fetch(`/api/notifications?userId=${userId}`);
+      const res = await fetch(`/api/admin/notifications?userId=${userId}`);
       if (!res.ok) throw new Error("fetch failed");
       const data: Notification[] = await res.json();
       setNotifications(data);
