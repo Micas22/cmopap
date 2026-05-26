@@ -257,32 +257,6 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ══════════════ STATS ══════════════ */}
-      <section className="w-full bg-gradient-to-b from-white to-orange-50/40 py-20 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[10%] -left-[5%] w-[350px] h-[350px] bg-orange-200/15 rounded-full blur-3xl" />
-          <div className="absolute top-[30%] -right-[5%] w-[400px] h-[400px] bg-amber-300/10 rounded-full blur-3xl" />
-        </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="inline-block bg-orange-100 text-orange-600 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3">
-              Em Números
-            </span>
-            <h2 className="text-3xl font-extrabold text-gray-800">O nosso CROA em Estatísticas</h2>
-          </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            {statItems.map(([img, title, target], i) => (
-              <StatCard key={i} img={img} title={title} target={target} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════ MAP ══════════════ */}
       <section id="map" className="py-24 bg-white relative">
