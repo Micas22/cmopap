@@ -14,7 +14,7 @@ model User {
   report_notifications  Boolean        @default(true)
   vaccine_notifications Boolean        @default(true)
   notifications         Notification[]
-  dark_mode             Boolean        @default(false)
+  no_mail           Boolean        @default(false)
 }
 
 model Animal {

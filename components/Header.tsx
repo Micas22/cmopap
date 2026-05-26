@@ -57,6 +57,7 @@ export default function Header() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState(false);
+  const [noMail, setNoMail] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -71,6 +72,36 @@ export default function Header() {
     if (u) setEmail(u);
     if (id) setUserId(id);
   }, []);
+
+  // Fetch user data (no_mail, and also resolve userId if missing from older sessions)
+  useEffect(() => {
+    if (!email) return;
+    fetch("/api/admin/users").then(r => r.ok ? r.json() : []).then((users: any[]) => {
+      const u = users.find((user: any) => user.email === email);
+      if (u) {
+        setNoMail(u.no_mail);
+        if (!userId) {
+          setUserId(u.id.toString());
+          localStorage.setItem("userId", u.id.toString());
+        }
+      }
+    }).catch(console.error);
+  }, [email, userId]);
+
+  const toggleNoMail = async () => {
+    if (!userId) return;
+    const nextVal = !noMail;
+    setNoMail(nextVal);
+    try {
+      await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(userId), no_mail: nextVal })
+      });
+    } catch(err) {
+      setNoMail(!nextVal);
+    }
+  };
 
   // ── Fetch notifications ───────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
@@ -412,7 +443,21 @@ export default function Header() {
                           </div>
                         </div>
                       </div>
-                      <div className="p-1.5">
+                      <div className="p-1.5 space-y-1">
+                        <button
+                          onClick={toggleNoMail}
+                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors duration-150 group"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${!noMail ? "bg-orange-50 text-orange-500" : "bg-gray-50 text-gray-400 group-hover:bg-gray-100"}`}>
+                              <Bell size={13} />
+                            </div>
+                            Notificações Email
+                          </div>
+                          <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${!noMail ? "bg-orange-500" : "bg-gray-200"}`}>
+                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${!noMail ? "translate-x-[18px]" : "translate-x-1"}`} />
+                          </div>
+                        </button>
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors duration-150 group"

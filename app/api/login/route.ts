@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     .setExpirationTime("24h")
     .sign(getJwtSecretKey());
 
-  const response = NextResponse.json({ success: true, email: user.email, perms: user.perms });
+  const response = NextResponse.json({ success: true, id: user.id, email: user.email, perms: user.perms });
   
   response.cookies.set("auth_token", token, {
     httpOnly: true,

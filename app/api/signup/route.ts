@@ -19,5 +19,5 @@ export async function POST(req: Request) {
     data: { email, password, perms: 1 },
   });
 
-  return new Response(JSON.stringify({ success: true, user }));
+  return new Response(JSON.stringify({ success: true, id: user.id, email: user.email, perms: user.perms }));
 }

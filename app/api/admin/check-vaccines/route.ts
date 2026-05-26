@@ -67,7 +67,7 @@ export async function GET() {
         notificationsCreated++;
 
         // Send emails
-        const adminEmails = admins.map((admin: any) => admin.email).filter(Boolean);
+        const adminEmails = admins.filter(a => !a.no_mail).map((admin: any) => admin.email).filter(Boolean);
         await sendNotificationEmail(
           adminEmails,
           "Aviso de Vacina – CROA Olhão",

@@ -10,6 +10,7 @@ export async function GET() {
         perms: true,
         vaccine_notifications: true,
         report_notifications: true,
+        no_mail: true,
       },
     });
 
@@ -46,12 +47,17 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { id, email, password, perms, vaccine_notifications, report_notifications } = await req.json();
+    const { id, email, password, perms, vaccine_notifications, report_notifications, no_mail } = await req.json();
+
+    const dataToUpdate: any = { email, password, perms, vaccine_notifications, report_notifications };
+    if (no_mail !== undefined) {
+      dataToUpdate.no_mail = no_mail;
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { email, password, perms, vaccine_notifications, report_notifications },
-      select: { id: true, email: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true },
+      data: dataToUpdate,
+      select: { id: true, email: true, password: true, perms: true, vaccine_notifications: true, report_notifications: true, no_mail: true },
     });
 
     return new Response(JSON.stringify(updatedUser), { status: 200 });

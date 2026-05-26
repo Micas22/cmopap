@@ -63,6 +63,7 @@ export default function LoginPage() {
     setIsLoading(false);
     if (!res.ok) { setError(data.error); return; }
     localStorage.setItem("email", data.email);
+    localStorage.setItem("userId", data.id);
     router.push(data.perms === 0 ? "/pubmain" : "/");
   }
 
