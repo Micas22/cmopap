@@ -14,7 +14,7 @@ model User {
   report_notifications  Boolean        @default(true)
   vaccine_notifications Boolean        @default(true)
   notifications         Notification[]
-  no_mail           Boolean        @default(false)
+  no_mail               Boolean        @default(false)
 }
 
 model Animal {
@@ -84,6 +84,15 @@ model Notification {
   read        Boolean  @default(false)
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  ipAddress String
+  userAgent String
+  location  String?
+  created_at DateTime @default(now()) @db.Timestamp(6)
 }
 
 model AnimalHistory {

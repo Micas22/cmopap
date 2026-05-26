@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Search, LogOut, Bell, X, Menu, ChevronRight, Info, AlertTriangle, CheckCircle2, MessageSquare, Loader2 } from "lucide-react";
+import { Search, LogOut, Bell, X, Menu, ChevronRight, Info, AlertTriangle, CheckCircle2, MessageSquare, Loader2, History } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -14,6 +14,15 @@ interface Notification {
   title: string;
   description: string;
   dataAndTime: string;
+}
+
+interface LoginHistoryEntry {
+  id: number;
+  userId: number;
+  ipAddress: string;
+  userAgent: string;
+  location: string | null;
+  created_at: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,6 +39,25 @@ function relativeTime(dateStr: string): string {
   const days = Math.floor(hrs / 24);
   if (days < 7) return `há ${days}d`;
   return new Date(dateStr).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
+}
+
+function parseUserAgent(ua: string): string {
+  if (!ua) return "Dispositivo Desconhecido";
+  let browser = "Desconhecido";
+  if (ua.includes("Edg/")) browser = "Edge";
+  else if (ua.includes("Chrome/") && !ua.includes("Edg/")) browser = "Chrome";
+  else if (ua.includes("Safari/") && !ua.includes("Chrome/")) browser = "Safari";
+  else if (ua.includes("Firefox/")) browser = "Firefox";
+
+  let os = "OS Desconhecido";
+  if (ua.includes("Windows NT 10.0")) os = "Windows 10/11";
+  else if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Mac OS X")) os = "macOS";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+  return `${browser} em ${os}`;
 }
 
 const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -58,6 +86,9 @@ export default function Header() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifError, setNotifError] = useState(false);
   const [noMail, setNoMail] = useState(false);
+  const [showLoginHistory, setShowLoginHistory] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<LoginHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -122,6 +153,26 @@ export default function Header() {
 
   // Fetch on mount + whenever userId resolves
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  // ── Fetch login history ───────────────────────────────────────────────────
+  const fetchLoginHistory = useCallback(async () => {
+    if (!userId) return;
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/user/login-history?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLoginHistory(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setHistoryLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    if (showLoginHistory) fetchLoginHistory();
+  }, [showLoginHistory, fetchLoginHistory]);
 
   // Poll every 60 s while tab is visible
   useEffect(() => {
@@ -459,6 +510,15 @@ export default function Header() {
                           </div>
                         </button>
                         <button
+                          onClick={() => { setShowLoginHistory(true); setShowPopup(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors duration-150 group"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-gray-50 group-hover:bg-gray-100 text-gray-400 flex items-center justify-center transition-colors">
+                            <History size={13} />
+                          </div>
+                          Histórico de Sessões
+                        </button>
+                        <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors duration-150 group"
                         >
@@ -594,6 +654,86 @@ export default function Header() {
           )}
         </AnimatePresence>
       </header>
+
+      {/* Login History Modal */}
+      <AnimatePresence>
+        {showLoginHistory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center shadow-inner">
+                    <History className="text-white w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Histórico de Sessões</h2>
+                    <p className="text-xs text-gray-500 font-medium">Atividade recente da sua conta</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLoginHistory(false)}
+                  className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1">
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
+                  </div>
+                ) : loginHistory.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    Nenhum histórico encontrado.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {loginHistory.map((entry) => {
+                      const isLocal = entry.ipAddress === "Localhost";
+                      return (
+                        <div key={entry.id} className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:border-orange-200 hover:shadow-md hover:shadow-orange-900/5 transition-all">
+                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">
+                            <Info className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-semibold text-gray-900 truncate" title={entry.userAgent}>
+                                {parseUserAgent(entry.userAgent)}
+                              </span>
+                              <span className="text-xs font-medium text-gray-400 whitespace-nowrap ml-2">
+                                {relativeTime(entry.created_at || (entry as any).createdAt)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <span className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isLocal ? "bg-gray-400" : "bg-green-500"}`} />
+                                {entry.location || "Localização Desconhecida"}
+                              </span>
+                              <span className="text-gray-300">•</span>
+                              <span className="font-mono text-[11px] text-gray-400">{entry.ipAddress}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
