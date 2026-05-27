@@ -22,7 +22,7 @@ type FichaInternamento = {
     raca: string;
     data: string;
     temperamento: string;
-    idade: string;
+    idade: number;
     peso: number;
     motivo: string;
     chip: string;
@@ -32,31 +32,22 @@ type Tratamento = {
     id: number;
     medicacao: string;
     dose: string;
-    data: string; // YYYY-MM-DD
+    dia: string; // YYYY-MM-DD
     internamento: number;
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   MOCK DATA (animals DB for autofill)
-───────────────────────────────────────────────────────────────────────────── */
-const MOCK_ANIMALS = [
-    { id: 1, nome: "Simba", raca: "Golden Retriever", idade: "4 anos", peso: 32.5, chip: "941000024680135" },
-    { id: 2, nome: "Luna", raca: "Labrador", idade: "2 anos", peso: 24.1, chip: "941000024680244" },
-    { id: 3, nome: "Rex", raca: "Pastor Alemão", idade: "6 anos", peso: 38.0, chip: "941000024680311" },
-    { id: 4, nome: "Mel", raca: "Beagle", idade: "3 anos", peso: 12.8, chip: "941000024680428" },
-    { id: 5, nome: "Thor", raca: "Husky Siberiano", idade: "5 anos", peso: 27.3, chip: "941000024680512" },
-];
+type AnimalOption = { id: number; nome: string; raca: string; peso: number; chip: string; };
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────────────────────────────────────── */
 const emptyFicha = (): Omit<FichaInternamento, "id"> => ({
     nome: "", raca: "", data: new Date().toISOString().slice(0, 10),
-    temperamento: "", idade: "", peso: 0, motivo: "", chip: "",
+    temperamento: "", idade: 0, peso: 0, motivo: "", chip: "",
 });
 
 const emptyTratamento = (internamentoId: number): Omit<Tratamento, "id"> => ({
-    medicacao: "", dose: "", data: new Date().toISOString().slice(0, 10),
+    medicacao: "", dose: "", dia: new Date().toISOString().slice(0, 10),
     internamento: internamentoId,
 });
 
@@ -101,15 +92,16 @@ function ModalSection({ title, icon: Icon, children }: { title: string; icon?: a
 /* ─────────────────────────────────────────────────────────────────────────────
    ANIMAL PICKER
 ───────────────────────────────────────────────────────────────────────────── */
-function AnimalPicker({ onSelect, onClose }: {
-    onSelect: (a: typeof MOCK_ANIMALS[0]) => void;
+function AnimalPicker({ animals, onSelect, onClose }: {
+    animals: AnimalOption[];
+    onSelect: (a: AnimalOption) => void;
     onClose: () => void;
 }) {
     const [q, setQ] = useState("");
-    const filtered = MOCK_ANIMALS.filter(a =>
-        a.nome.toLowerCase().includes(q.toLowerCase()) ||
-        a.raca.toLowerCase().includes(q.toLowerCase()) ||
-        a.chip.includes(q)
+    const filtered = animals.filter(a =>
+        (a.nome || "").toLowerCase().includes(q.toLowerCase()) ||
+        (a.raca || "").toLowerCase().includes(q.toLowerCase()) ||
+        (a.chip || "").includes(q)
     );
     return (
         <div className="px-6 py-4 space-y-3">
@@ -129,9 +121,9 @@ function AnimalPicker({ onSelect, onClose }: {
                             <Dog className="w-5 h-5 text-orange-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="font-bold text-gray-800 text-sm">{a.nome}</p>
-                            <p className="text-xs text-gray-400">{a.raca} · {a.idade} · {a.peso} kg</p>
-                            <p className="text-[10px] text-gray-300 font-mono truncate">Chip: {a.chip}</p>
+                            <p className="font-bold text-gray-800 text-sm">{a.nome || "Sem nome"}</p>
+                            <p className="text-xs text-gray-400">{a.raca || "Sem raça"} · {a.peso ? `${a.peso} kg` : "Sem peso"}</p>
+                            <p className="text-[10px] text-gray-300 font-mono truncate">Chip: {a.chip || "S/ Chip"}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-orange-400 transition-colors" />
                     </button>
@@ -164,8 +156,8 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
     const byDate = useMemo(() => {
         const m: Record<string, Tratamento[]> = {};
         for (const t of tratamentos) {
-            if (!m[t.data]) m[t.data] = [];
-            m[t.data].push(t);
+            if (!m[t.dia]) m[t.dia] = [];
+            m[t.dia].push(t);
         }
         return m;
     }, [tratamentos]);
@@ -183,7 +175,7 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
 
     const handleAdd = () => {
         if (!selectedDay || !newT.medicacao.trim()) return;
-        onAdd({ medicacao: newT.medicacao, dose: newT.dose, data: selectedDay, internamento: ficha.id });
+        onAdd({ medicacao: newT.medicacao, dose: newT.dose, dia: selectedDay, internamento: ficha.id });
         setNewT({ medicacao: "", dose: "" });
         setAddOpen(false);
     };
@@ -336,9 +328,10 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
 /* ─────────────────────────────────────────────────────────────────────────────
    FICHA FORM
 ───────────────────────────────────────────────────────────────────────────── */
-function FichaForm({ data, setData }: {
+function FichaForm({ data, setData, animals }: {
     data: Omit<FichaInternamento, "id"> & { id?: number };
     setData: (v: any) => void;
+    animals: AnimalOption[];
 }) {
     const [showPicker, setShowPicker] = useState(false);
 
@@ -361,8 +354,8 @@ function FichaForm({ data, setData }: {
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                             className="overflow-hidden">
                             <div className="pt-2">
-                                <AnimalPicker onSelect={a => {
-                                    setData({ ...data, nome: a.nome, raca: a.raca, idade: a.idade, peso: a.peso, chip: a.chip });
+                                <AnimalPicker animals={animals} onSelect={a => {
+                                    setData({ ...data, nome: a.nome || "", raca: a.raca || "", peso: a.peso || 0, chip: a.chip || "" });
                                     setShowPicker(false);
                                 }} onClose={() => setShowPicker(false)} />
                             </div>
@@ -386,9 +379,9 @@ function FichaForm({ data, setData }: {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                     <div>
-                        <FieldLabel>Idade</FieldLabel>
-                        <Input placeholder="Ex: 3 anos" value={data.idade}
-                            onChange={e => setData({ ...data, idade: e.target.value })} className={inputCls} />
+                        <FieldLabel>Idade (anos)</FieldLabel>
+                        <Input type="number" placeholder="Ex: 3" value={data.idade || ""}
+                            onChange={e => setData({ ...data, idade: parseInt(e.target.value) || 0 })} className={inputCls} />
                     </div>
                     <div>
                         <FieldLabel>Peso (kg)</FieldLabel>
@@ -488,9 +481,9 @@ function FichaCard({ ficha, tratCount, onEdit, onDelete, onView }: {
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${tColor}`}>
                         <Zap className="w-3 h-3" />{ficha.temperamento || "—"}
                     </span>
-                    {ficha.idade && (
+                    {ficha.idade > 0 && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-orange-50 text-orange-600">
-                            <User className="w-3 h-3" />{ficha.idade}
+                            <User className="w-3 h-3" />{ficha.idade} anos
                         </span>
                     )}
                     {ficha.peso > 0 && (
@@ -529,23 +522,41 @@ function FichaCard({ ficha, tratCount, onEdit, onDelete, onView }: {
 export default function FichasInternamento() {
     const [fichas, setFichas] = useState<FichaInternamento[]>([]);
     const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
+    const [animals, setAnimals] = useState<AnimalOption[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Simulated fetch — replace with real API calls
-        setTimeout(() => {
-            setFichas([
-                { id: 1, nome: "Simba", raca: "Golden Retriever", data: "2025-05-10", temperamento: "Dócil", idade: "4 anos", peso: 32.5, motivo: "Cirurgia ortopédica ao membro posterior esquerdo", chip: "941000024680135" },
-                { id: 2, nome: "Luna", raca: "Labrador", data: "2025-05-18", temperamento: "Nervoso", idade: "2 anos", peso: 24.1, motivo: "Gastroenterite aguda com desidratação moderada", chip: "941000024680244" },
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [resF, resT, resA] = await Promise.all([
+                fetch("/api/admin/internamentos"),
+                fetch("/api/admin/tratamentos"),
+                fetch("/api/admin/animals")
             ]);
-            setTratamentos([
-                { id: 1, medicacao: "Amoxicilina", dose: "250mg 2x/dia", data: "2025-05-11", internamento: 1 },
-                { id: 2, medicacao: "Tramadol", dose: "50mg 3x/dia", data: "2025-05-11", internamento: 1 },
-                { id: 3, medicacao: "Metronidazol", dose: "500mg 2x/dia", data: "2025-05-18", internamento: 2 },
-                { id: 4, medicacao: "Soro IV", dose: "500ml/dia", data: "2025-05-19", internamento: 2 },
-            ]);
+            if (resF.ok) {
+                const dataF = await resF.json();
+                setFichas(dataF.map((f: any) => ({
+                    ...f,
+                    data: f.data ? new Date(f.data).toISOString().slice(0, 10) : ""
+                })));
+            }
+            if (resT.ok) {
+                const dataT = await resT.json();
+                setTratamentos(dataT.map((t: any) => ({
+                    ...t,
+                    dia: t.dia ? new Date(t.dia).toISOString().slice(0, 10) : ""
+                })));
+            }
+            if (resA.ok) setAnimals(await resA.json());
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
             setLoading(false);
-        }, 500);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
     }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -558,7 +569,6 @@ export default function FichasInternamento() {
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
     const [form, setForm] = useState(emptyFicha());
-    const nextId = useMemo(() => Math.max(0, ...fichas.map(f => f.id)) + 1, [fichas]);
 
     const filtered = useMemo(() => {
         let d = [...fichas];
@@ -580,33 +590,94 @@ export default function FichasInternamento() {
 
     const tratCount = (id: number) => tratamentos.filter(t => t.internamento === id).length;
 
-    const handleCreate = () => {
-        const newFicha: FichaInternamento = { ...form, id: nextId };
-        setFichas(p => [newFicha, ...p]);
-        setCreateOpen(false);
-        setForm(emptyFicha());
+    const handleCreate = async () => {
+        try {
+            const res = await fetch("/api/admin/internamentos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form)
+            });
+            if (res.ok) {
+                const newFicha = await res.json();
+                newFicha.data = newFicha.data ? new Date(newFicha.data).toISOString().slice(0, 10) : "";
+                setFichas(p => [newFicha, ...p]);
+                setCreateOpen(false);
+                setForm(emptyFicha());
+            } else {
+                console.error("Failed to create ficha");
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!editItem) return;
-        setFichas(p => p.map(f => f.id === editItem.id ? editItem : f));
-        setEditItem(null);
+        try {
+            const res = await fetch("/api/admin/internamentos", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editItem)
+            });
+            if (res.ok) {
+                const updatedFicha = await res.json();
+                updatedFicha.data = updatedFicha.data ? new Date(updatedFicha.data).toISOString().slice(0, 10) : "";
+                setFichas(p => p.map(f => f.id === updatedFicha.id ? updatedFicha : f));
+                setEditItem(null);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (deleteConfirmId == null) return;
-        setFichas(p => p.filter(f => f.id !== deleteConfirmId));
-        setTratamentos(p => p.filter(t => t.internamento !== deleteConfirmId));
-        setDeleteConfirmId(null);
+        try {
+            const res = await fetch("/api/admin/internamentos", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: deleteConfirmId })
+            });
+            if (res.ok) {
+                setFichas(p => p.filter(f => f.id !== deleteConfirmId));
+                setTratamentos(p => p.filter(t => t.internamento !== deleteConfirmId));
+                setDeleteConfirmId(null);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleAddTratamento = (t: Omit<Tratamento, "id">) => {
-        const newId = Math.max(0, ...tratamentos.map(x => x.id)) + 1;
-        setTratamentos(p => [...p, { ...t, id: newId }]);
+    const handleAddTratamento = async (t: Omit<Tratamento, "id">) => {
+        try {
+            const res = await fetch("/api/admin/tratamentos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(t)
+            });
+            if (res.ok) {
+                const newTrat = await res.json();
+                newTrat.dia = newTrat.dia ? new Date(newTrat.dia).toISOString().slice(0, 10) : "";
+                setTratamentos(p => [...p, newTrat]);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleDeleteTratamento = (id: number) => {
-        setTratamentos(p => p.filter(t => t.id !== id));
+    const handleDeleteTratamento = async (id: number) => {
+        try {
+            const res = await fetch("/api/admin/tratamentos", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) {
+                setTratamentos(p => p.filter(t => t.id !== id));
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleExport = () => {
@@ -749,7 +820,7 @@ export default function FichasInternamento() {
                             </div>
                         </div>
                     </div>
-                    <FichaForm data={form} setData={setForm} />
+                    <FichaForm data={form} setData={setForm} animals={animals} />
                     <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex gap-3">
                         <Button onClick={handleCreate} disabled={!isFormValid(form)}
                             className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 font-bold disabled:opacity-40">
@@ -776,7 +847,7 @@ export default function FichasInternamento() {
                     </div>
                     {editItem && (
                         <>
-                            <FichaForm data={editItem} setData={setEditItem} />
+                            <FichaForm data={editItem} setData={setEditItem} animals={animals} />
                             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex gap-3">
                                 <Button onClick={handleUpdate} disabled={!isFormValid(editItem)}
                                     className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 font-bold disabled:opacity-40">
@@ -811,9 +882,9 @@ export default function FichasInternamento() {
                                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/20 text-xs font-bold text-white">
                                                 <Calendar className="w-3 h-3" />{formatDate(viewItem.data)}
                                             </span>
-                                            {viewItem.idade && (
+                                            {viewItem.idade > 0 && (
                                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/20 text-xs font-bold text-white">
-                                                    <User className="w-3 h-3" />{viewItem.idade}
+                                                    <User className="w-3 h-3" />{viewItem.idade} anos
                                                 </span>
                                             )}
                                             {viewItem.peso > 0 && (

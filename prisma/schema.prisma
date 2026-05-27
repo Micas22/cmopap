@@ -145,8 +145,8 @@ model FichaInternamento {
   raca String
   data DateTime @default(now()) @db.Timestamp(6)
   temperamento String
-  idade String
-  peso float
+  idade Int
+  peso Float
   motivo String
   chip String
 }
@@ -154,6 +154,6 @@ model Tratamento {
   id Int @id @default(autoincrement())
   medicacao String
   dose String
-  data DateTime @default(now()) @db.Timestamp(6)
+  dia DateTime @default(now()) @db.Timestamp(6)
   internamento Int   
 }
