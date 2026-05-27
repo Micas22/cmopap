@@ -130,3 +130,11 @@ model Chamadas {
   motivo String
   resposta String? @map("reposta")
 }
+
+model RegistoEntradaSaida {
+  id Int @id @default(autoincrement())
+  data DateTime @default(now()) @db.Timestamp(6)
+  telefone String
+  nome String
+  motivo String
+}

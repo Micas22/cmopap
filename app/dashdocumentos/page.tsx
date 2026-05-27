@@ -43,10 +43,10 @@ export default function DashDocumentos() {
       description: "Registar chamadas efetuadas"
     },
     {
-      title: "Relatório de vacinas",
+      title: "Registo de entradas e saídas",
       icon: CheckCircle,
       color: "from-green-500 to-emerald-500",
-      description: "Gerar relatório de vacinas"
+      description: "Registar entradas e saídas"
     },
     {
       title: "Ficha de animal",
@@ -61,6 +61,8 @@ export default function DashDocumentos() {
       router.push("/dashdocumentos/aconselhamento");
     } else if (title === "Registo de chamadas") {
       router.push("/dashdocumentos/chamadas");
+    } else if (title === "Registo de entradas e saídas") {
+      router.push("/dashdocumentos/registoensai");
     } else {
       alert(`Funcionalidade "${title}" - Em desenvolvimento. Em breve poderá gerar este documento!`);
     }
