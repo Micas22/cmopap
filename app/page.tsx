@@ -1,6 +1,6 @@
 "use client";
 import { Phone, Mail, MapPin, Facebook, Instagram, X, PawPrint, Heart, ArrowUp, ArrowRight, Stethoscope, CalendarDays } from "lucide-react";
-import { motion, useMotionValue, useTransform, animate, useInView, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useTransform, useSpring, useScroll, animate, useInView, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/Header";
@@ -86,6 +86,17 @@ const AnimalSkeleton = ({ i }: { i: number }) => (
   </motion.div>
 );
 
+// ─── Paw positions ────────────────────────────────────────────────────────────
+const PAW_POSITIONS = [
+  { top: "8%", left: "5%", size: 36, rot: -20, op: 0.13, dur: 5.2 },
+  { top: "72%", left: "11%", size: 22, rot: 18, op: 0.09, dur: 4.1 },
+  { top: "20%", right: "5%", size: 28, rot: 12, op: 0.11, dur: 6.0 },
+  { top: "62%", right: "8%", size: 38, rot: -10, op: 0.07, dur: 4.8 },
+  { top: "42%", left: "45%", size: 18, rot: 35, op: 0.07, dur: 5.5 },
+  { top: "85%", left: "35%", size: 24, rot: -25, op: 0.06, dur: 3.9 },
+  { top: "15%", left: "30%", size: 16, rot: 8, op: 0.06, dur: 6.5 },
+] as const;
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function Page() {
   const [recentAnimals, setRecentAnimals] = useState<any[]>([]);
@@ -93,6 +104,28 @@ export default function Page() {
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
   const [stats, setStats] = useState({ residentes: 0, colonias: 0, esterilizados: 0, errantes: 0, acolhimento: 0 });
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Hero parallax & mouse
+  const heroRef = useRef<HTMLElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 40, damping: 25 });
+  const springY = useSpring(mouseY, { stiffness: 40, damping: 25 });
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const parallaxY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
+  const contentFade = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const contentSlideY = useTransform(scrollYProgress, [0, 0.6], ["0%", "8%"]);
+
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      const rect = heroRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      mouseX.set(((e.clientX - rect.left) / rect.width - 0.5) * 24);
+      mouseY.set(((e.clientY - rect.top) / rect.height - 0.5) * 14);
+    };
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, [mouseX, mouseY]);
 
   // Fetch animals
   useEffect(() => {
@@ -138,121 +171,225 @@ export default function Page() {
       <Header />
 
       {/* ══════════════ HERO ══════════════ */}
-      <section className="relative min-h-[88vh] flex items-center bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400 overflow-hidden">
-        {/* Grain */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: GRAIN, backgroundSize: "128px" }} />
+      <section
+        ref={heroRef}
+        className="relative min-h-screen flex items-center overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #c2410c 0%, #ea580c 30%, #f97316 62%, #fb923c 80%, #fbbf24 100%)" }}
+      >
+        {/* Grain overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: GRAIN, backgroundSize: "200px", opacity: 0.035, mixBlendMode: "overlay" }}
+        />
 
-        {/* Decorative rings */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-32 -right-32 w-[600px] h-[600px] border-[60px] border-white/[0.06] rounded-full" />
-          <motion.div animate={{ rotate: -360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-48 -left-24 w-[500px] h-[500px] border-[45px] border-white/[0.06] rounded-full" />
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
-            className="absolute top-1/4 left-1/3 w-[300px] h-[300px] border-[25px] border-white/[0.04] rounded-full" />
-        </div>
+        {/* Ambient glow that follows mouse */}
+        <motion.div
+          className="absolute pointer-events-none rounded-full"
+          style={{
+            width: 900, height: 900,
+            background: "radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%)",
+            top: "-15%", right: "-10%",
+            x: springX, y: springY,
+          }}
+        />
+
+        {/* Geometric rings (parallax) */}
+        <motion.div style={{ y: parallaxY }} className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-40 -right-40 w-[700px] h-[700px] rounded-full"
+            style={{ border: "1.5px solid rgba(255,255,255,0.10)", background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%)" }}
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-56 -left-32 w-[580px] h-[580px] rounded-full"
+            style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+          />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
+            className="absolute top-1/3 left-1/4 w-[260px] h-[260px] rounded-full"
+            style={{ border: "1px solid rgba(255,255,255,0.06)" }}
+          />
+          {/* Diagonal light streak */}
+          <div
+            className="absolute"
+            style={{
+              width: 3, height: "130%",
+              background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.08) 60%, transparent 100%)",
+              top: "-15%", left: "42%",
+              transform: "rotate(-20deg)",
+            }}
+          />
+        </motion.div>
 
         {/* Scattered paw prints */}
-        {[
-          { top: "12%", left: "8%", size: 28, rot: -15, op: 0.12 },
-          { top: "70%", left: "14%", size: 20, rot: 20, op: 0.09 },
-          { top: "25%", right: "6%", size: 24, rot: 10, op: 0.10 },
-          { top: "60%", right: "9%", size: 32, rot: -8, op: 0.08 },
-          { top: "45%", left: "48%", size: 18, rot: 30, op: 0.07 },
-        ].map((p, i) => (
+        {PAW_POSITIONS.map((p, i) => (
           <motion.div
             key={i}
             style={{ position: "absolute", top: p.top, left: (p as any).left, right: (p as any).right, rotate: p.rot, opacity: p.op }}
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.7 }}
+            animate={{ y: [0, -12, 0], scale: [1, 1.06, 1] }}
+            transition={{ duration: p.dur, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 }}
           >
-            <PawPrint size={p.size} color="white" />
+            <PawPrint size={p.size} color="white" strokeWidth={1.5} />
           </motion.div>
         ))}
 
-        <div className="relative max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center w-full">
+        {/* Main grid */}
+        <motion.div
+          style={{ opacity: contentFade, y: contentSlideY }}
+          className="relative max-w-7xl mx-auto px-6 xl:px-8 py-28 grid lg:grid-cols-[1fr_420px] gap-20 items-center w-full"
+        >
           {/* Left: copy */}
-          <div>
-            <motion.span
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-6 border border-white/25"
-            >
-              <PawPrint size={11} /> Centro de Recolha Oficial de Animais
-            </motion.span>
+          <div className="space-y-8">
+            {/* Badge */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <span
+                className="inline-flex items-center gap-2 text-white/90 text-[11px] font-bold uppercase tracking-[0.18em] px-4 py-2 rounded-full border"
+                style={{ background: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.22)", backdropFilter: "blur(12px)" }}
+              >
+                <PawPrint size={10} strokeWidth={2.5} />
+                Centro de Recolha Oficial · Olhão
+              </span>
+            </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.08 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.05] tracking-tight mb-6"
-            >
-              Um lar para<br />
-              <span className="text-amber-200">cada animal</span>
-            </motion.h1>
+            {/* Headline — lines rise into frame */}
+            <div className="space-y-1 overflow-hidden">
+              {[
+                { text: "Um lar para", delay: 0.08, accent: false },
+                { text: "cada animal.", delay: 0.16, accent: true },
+              ].map(({ text, delay, accent }) => (
+                <motion.div
+                  key={text}
+                  initial={{ opacity: 0, y: 60 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <h1
+                    className={`text-[clamp(3rem,8vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.03em] ${accent ? "text-amber-200" : "text-white"}`}
+                  >
+                    {text}
+                  </h1>
+                </motion.div>
+              ))}
+            </div>
 
+            {/* Divider */}
+            <motion.div
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="h-px w-24"
+              style={{ background: "rgba(255,255,255,0.3)", transformOrigin: "left" }}
+            />
+
+            {/* Body */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.16 }}
-              className="text-white/80 text-lg leading-relaxed max-w-md mb-10"
+              transition={{ duration: 0.6, delay: 0.34 }}
+              className="text-white/75 text-[1.05rem] leading-[1.75] max-w-[420px]"
             >
               O CROA de Olhão dedica-se ao bem-estar, esterilização e adoção responsável de animais errantes e abandonados no concelho.
             </motion.p>
 
+            {/* CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.24 }}
-              className="flex flex-wrap gap-3"
+              transition={{ duration: 0.5, delay: 0.42 }}
+              className="flex flex-wrap items-center gap-3 pt-2"
             >
               <Link
                 href="#animals"
-                className="inline-flex items-center gap-2 bg-white text-orange-600 font-bold px-6 py-3.5 rounded-2xl shadow-xl shadow-black/10 hover:bg-orange-50 active:scale-[.98] transition-all duration-200 text-sm"
+                className="group inline-flex items-center gap-2.5 bg-white text-orange-700 font-bold px-7 py-4 rounded-2xl text-sm hover:bg-amber-50 active:scale-[.98] transition-all duration-200 shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
               >
-                <Heart size={15} /> Conhecer os Animais
+                <Heart size={14} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+                Conhecer os Animais
+                <ArrowRight size={13} strokeWidth={2.5} className="opacity-50 -ml-1 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href="#map"
-                className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white font-semibold px-6 py-3.5 rounded-2xl border border-white/30 hover:bg-white/25 active:scale-[.98] transition-all duration-200 text-sm"
+                className="group inline-flex items-center gap-2.5 font-semibold px-7 py-4 rounded-2xl text-sm text-white active:scale-[.98] transition-all duration-200 border"
+                style={{ background: "rgba(255,255,255,0.13)", borderColor: "rgba(255,255,255,0.28)", backdropFilter: "blur(12px)" }}
               >
-                <MapPin size={15} /> Ver Colónias
+                <MapPin size={14} strokeWidth={2.5} />
+                Ver Colónias
               </Link>
+            </motion.div>
+
+            {/* Trust strip */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.56 }}
+              className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1"
+            >
+              {["Adoção gratuita", "Vacinados & desparasitados", "Acompanhamento pós-adoção"].map((item) => (
+                <span key={item} className="flex items-center gap-1.5 text-white/60 text-xs font-medium">
+                  <span className="w-1 h-1 rounded-full bg-amber-300/70 flex-shrink-0" />
+                  {item}
+                </span>
+              ))}
             </motion.div>
           </div>
 
-          {/* Right: floating stat pills */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="hidden lg:flex flex-col gap-4 items-start pl-8"
-          >
-            {statItems.map(([img, label, val], i) => (
-              <motion.div
-                key={label}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-center gap-4 bg-white/15 backdrop-blur-md border border-white/25 rounded-2xl px-5 py-3.5 w-64"
-              >
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <img src={`/${img}`} alt={label} className="w-6 h-6 object-contain" />
-                </div>
-                <div>
-                  <p className="text-white font-extrabold text-2xl leading-none tabular-nums">{val}</p>
-                  <p className="text-white/65 text-xs font-semibold uppercase tracking-wider mt-0.5">{label}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+          {/* Right: stat cards */}
+          <div className="hidden lg:block">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.2 }} className="relative">
+              <div className="absolute inset-0 blur-3xl pointer-events-none"
+                style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, transparent 75%)" }} />
+              <div className="relative space-y-3">
+                {statItems.map(([img, label, val], i) => (
+                  <motion.div
+                    key={label}
+                    initial={{ opacity: 0, x: 40, y: 10 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ delay: 0.32 + i * 0.09, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                    whileHover={{ scale: 1.02, x: -4 }}
+                    className="group flex items-center gap-4 rounded-2xl px-5 py-4 border cursor-default"
+                    style={{
+                      background: "rgba(255,255,255,0.13)",
+                      borderColor: "rgba(255,255,255,0.22)",
+                      backdropFilter: "blur(16px)",
+                      boxShadow: "0 4px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: "rgba(255,255,255,0.18)" }}
+                    >
+                      <img src={`/${img}`} alt={label} className="w-7 h-7 object-contain" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-extrabold text-3xl leading-none tabular-nums tracking-tight">{val}</p>
+                      <p className="text-white/60 text-[11px] font-semibold uppercase tracking-[0.14em] mt-1 truncate">{label}</p>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-40 transition-opacity">
+                      <ArrowRight size={16} color="white" />
+                    </div>
+                  </motion.div>
+                ))}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.72, duration: 0.5 }}
+                  className="text-white/40 text-xs text-right pr-1 pt-1 font-medium"
+                >
+                  Dados atualizados em {new Date().toLocaleDateString("pt-PT", { month: "long", year: "numeric" })}
+                </motion.p>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
 
-        {/* Bottom wave */}
+        {/* Bottom wave — dual layer */}
         <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
-            <path d="M0 80V40C240 0 480 0 720 30C960 60 1200 70 1440 50V80H0Z" fill="white" />
+          <svg viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
+            <path d="M0 100V55C180 15 360 5 540 22C720 38 900 65 1080 68C1260 72 1360 55 1440 44V100H0Z" fill="rgba(255,255,255,0.06)" />
+            <path d="M0 100V62C200 22 400 8 640 28C880 48 1100 72 1300 62C1370 58 1410 52 1440 48V100H0Z" fill="white" />
           </svg>
         </div>
       </section>

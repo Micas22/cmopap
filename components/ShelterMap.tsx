@@ -222,10 +222,16 @@ export default function ShelterMap() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast>(null);
+  const [perms, setPerms] = useState<number>(1);
   const [newShelter, setNewShelter] = useState({
     nome: "", responsavel: "", contacto: "", num_animais: 0,
     latitude: 0, longitude: 0,
   });
+
+  useEffect(() => {
+    const p = localStorage.getItem("perms");
+    if (p !== null) setPerms(Number(p));
+  }, []);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchShelters = useCallback(async () => {
@@ -423,9 +429,9 @@ export default function ShelterMap() {
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs — "Adicionar" hidden for perms-0 users */}
           <div className="flex border-b border-gray-100 flex-shrink-0">
-            {(["list", "add"] as Tab[]).map((t) => (
+            {(["list", ...(perms >= 1 ? ["add"] : [])] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}

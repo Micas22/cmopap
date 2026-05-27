@@ -64,7 +64,8 @@ export default function LoginPage() {
     if (!res.ok) { setError(data.error); return; }
     localStorage.setItem("email", data.email);
     localStorage.setItem("userId", data.id);
-    router.push(data.perms === 0 ? "/pubmain" : "/");
+    localStorage.setItem("perms", String(data.perms));
+    router.push("/");
   }
 
   function switchMode(next: Mode) {

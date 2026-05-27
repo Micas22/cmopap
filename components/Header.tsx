@@ -78,6 +78,7 @@ export default function Header() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [perms, setPerms] = useState<number>(1);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -100,8 +101,10 @@ export default function Header() {
   useEffect(() => {
     const u = localStorage.getItem("email");
     const id = localStorage.getItem("userId");
+    const p = localStorage.getItem("perms");
     if (u) setEmail(u);
     if (id) setUserId(id);
+    if (p !== null) setPerms(Number(p));
   }, []);
 
   // Fetch user data (no_mail, and also resolve userId if missing from older sessions)
@@ -232,7 +235,9 @@ export default function Header() {
   const navLinks = [
     { name: "Início", href: "/" },
     { name: "Quem somos?", href: "/aboutus" },
-    { name: "Dashboard", href: "/dashboard" },
+    perms === 0
+      ? { name: "Reportar", href: "/report" }
+      : { name: "Dashboard", href: "/dashboard" },
   ];
 
   const isActive = (href: string) =>

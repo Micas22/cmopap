@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   }
 
   const user = await prisma.user.create({
-    data: { email, password, perms: 1 },
+    data: { email, password, perms: 0 },
   });
 
   return new Response(JSON.stringify({ success: true, id: user.id, email: user.email, perms: user.perms }));
