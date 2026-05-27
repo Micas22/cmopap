@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, CheckCircle, Shield, FileCheck, ChevronRight, UserCheck } from "lucide-react";
+import { ArrowLeft, FileText, CheckCircle, Shield, FileCheck, ChevronRight, UserCheck, Phone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,10 +37,10 @@ export default function DashDocumentos() {
       description: "Registar aconselhamento prestado"
     },
     {
-      title: "Certificado de esterilização",
-      icon: Shield,
+      title: "Registo de chamadas",
+      icon: Phone,
       color: "from-blue-500 to-indigo-500",
-      description: "Emitir certificado de esterilização"
+      description: "Registar chamadas efetuadas"
     },
     {
       title: "Relatório de vacinas",
@@ -59,6 +59,8 @@ export default function DashDocumentos() {
   const handleDocumentClick = (title: string) => {
     if (title === "Registo de aconselhamentos") {
       router.push("/dashdocumentos/aconselhamento");
+    } else if (title === "Registo de chamadas") {
+      router.push("/dashdocumentos/chamadas");
     } else {
       alert(`Funcionalidade "${title}" - Em desenvolvimento. Em breve poderá gerar este documento!`);
     }

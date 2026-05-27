@@ -122,3 +122,10 @@ model PasswordResetToken {
   used      Boolean  @default(false)
 }
 
+model Chamadas {
+  id Int @id @default(autoincrement())
+  data DateTime @default(now()) @db.Timestamp(6)
+  telefone String
+  nome String
+  motivo String
+}
