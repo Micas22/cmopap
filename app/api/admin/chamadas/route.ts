@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { data, telefone, nome, motivo } = body;
+    const { data, telefone, nome, motivo, resposta } = body;
 
     if (!telefone || !nome || !motivo) {
       return NextResponse.json({ error: "Campos obrigatórios em falta" }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         telefone,
         nome,
         motivo,
+        resposta: resposta || "",
       },
     });
     return NextResponse.json(chamada, { status: 201 });
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, data, telefone, nome, motivo } = body;
+    const { id, data, telefone, nome, motivo, resposta } = body;
 
     if (!id || !telefone || !nome || !motivo) {
       return NextResponse.json({ error: "Campos obrigatórios em falta" }, { status: 400 });
@@ -53,6 +54,7 @@ export async function PUT(req: NextRequest) {
         telefone,
         nome,
         motivo,
+        resposta: resposta || "",
       },
     });
     return NextResponse.json(chamada);

@@ -128,4 +128,5 @@ model Chamadas {
   telefone String
   nome String
   motivo String
+  resposta String? @map("reposta")
 }

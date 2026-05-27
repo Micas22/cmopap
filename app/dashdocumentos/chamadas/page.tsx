@@ -22,6 +22,7 @@ type Chamada = {
     telefone: string;
     nome: string;
     motivo: string;
+    resposta: string;
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ const emptyForm = (): Omit<Chamada, "id"> => ({
     telefone: "",
     nome: "",
     motivo: "",
+    resposta: "",
 });
 
 const formatDate = (iso: string) => {
@@ -108,6 +110,11 @@ function EntryCard({
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-xs text-gray-300 font-mono">#{record.id}</span>
+                                {record.resposta && (
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-green-500 bg-green-50 px-2 py-0.5 rounded-md">
+                                        Respondida
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -139,8 +146,16 @@ function EntryCard({
                 {/* Motivo */}
                 <div className="mb-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-300 mb-1">Motivo</p>
-                    <p className="text-sm font-semibold text-gray-800 leading-relaxed">{record.motivo || "—"}</p>
+                    <p className="text-sm font-semibold text-gray-800 leading-relaxed line-clamp-3">{record.motivo || "—"}</p>
                 </div>
+
+                {/* Resposta */}
+                {record.resposta && (
+                    <div className="mb-1 p-2.5 rounded-xl bg-green-50/50 border border-green-100/50">
+                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-green-500 mb-1">Resposta</p>
+                        <p className="text-sm font-semibold text-green-800 leading-relaxed line-clamp-3">{record.resposta}</p>
+                    </div>
+                )}
             </div>
 
             {/* Bottom strip */}
@@ -190,6 +205,12 @@ function FormBody({
                         value={data.motivo} onChange={e => setData({ ...data, motivo: e.target.value })}
                         className={`w-full ${inputCls} px-4 py-2.5 resize-none border-2`} />
                 </div>
+                <div>
+                    <FieldLabel>Resposta</FieldLabel>
+                    <textarea rows={3} placeholder="Resposta dada…"
+                        value={data.resposta} onChange={e => setData({ ...data, resposta: e.target.value })}
+                        className={`w-full ${inputCls} px-4 py-2.5 resize-none border-2`} />
+                </div>
             </ModalSection>
         </div>
     );
@@ -214,6 +235,7 @@ export default function Chamadas() {
                         telefone: item.telefone || "",
                         nome: item.nome || "",
                         motivo: item.motivo || "",
+                        resposta: item.resposta || "",
                     })));
                 }
             } catch (error) {
@@ -282,6 +304,7 @@ export default function Chamadas() {
                     telefone: newItem.telefone || "",
                     nome: newItem.nome || "",
                     motivo: newItem.motivo || "",
+                    resposta: newItem.resposta || "",
                 }, ...p]);
                 setCreateOpen(false);
                 setForm(emptyForm());
@@ -321,8 +344,8 @@ export default function Chamadas() {
 
     const handleExport = () => {
         const rows = [
-            ["ID", "Data", "Nome", "Telefone", "Motivo"],
-            ...records.map(r => [r.id, formatDate(r.data), r.nome, r.telefone, r.motivo]),
+            ["ID", "Data", "Nome", "Telefone", "Motivo", "Resposta"],
+            ...records.map(r => [r.id, formatDate(r.data), r.nome, r.telefone, r.motivo, r.resposta]),
         ];
         const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -558,6 +581,12 @@ export default function Chamadas() {
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Motivo</p>
                                     <p className="text-sm font-semibold text-gray-800 leading-relaxed">{viewItem.motivo || "—"}</p>
                                 </div>
+                                {viewItem.resposta && (
+                                    <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-1.5">Resposta</p>
+                                        <p className="text-sm font-semibold text-green-900 leading-relaxed">{viewItem.resposta}</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex gap-3">
