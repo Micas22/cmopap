@@ -138,3 +138,22 @@ model RegistoEntradaSaida {
   nome String
   motivo String
 }
+
+model FichaInternamento {
+  id Int @id @default(autoincrement())
+  nome String
+  raca String
+  data DateTime @default(now()) @db.Timestamp(6)
+  temperamento String
+  idade String
+  peso float
+  motivo String
+  chip String
+}
+model Tratamento {
+  id Int @id @default(autoincrement())
+  medicacao String
+  dose String
+  data DateTime @default(now()) @db.Timestamp(6)
+  internamento Int   
+}
