@@ -102,6 +102,7 @@ export default function Page() {
   const [recentAnimals, setRecentAnimals] = useState<any[]>([]);
   const [animalsLoading, setAnimalsLoading] = useState(true);
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
+  const [colonias, setColonias] = useState<any[]>([]);
   const [stats, setStats] = useState({ residentes: 0, colonias: 0, esterilizados: 0, errantes: 0, acolhimento: 0 });
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -136,6 +137,14 @@ export default function Page() {
       } catch (e) { console.error(e); }
       finally { setAnimalsLoading(false); }
     })();
+  }, []);
+
+  // Fetch colonias for ID → name lookup in modal
+  useEffect(() => {
+    fetch("/api/admin/colonias")
+      .then(r => r.ok ? r.json() : [])
+      .then(setColonias)
+      .catch(console.error);
   }, []);
 
   // Fetch stats
@@ -722,14 +731,29 @@ export default function Page() {
 
               {/* Details */}
               <div className="p-6 space-y-3">
-                {selectedAnimal.chip && (
+                {/* Raça */}
+                {selectedAnimal.raca && (
                   <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
-                    <p className="text-xs text-orange-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
-                      <Stethoscope size={10} /> Número do Chip
+                    <p className="text-xs text-orange-400 font-bold uppercase tracking-widest mb-1">
+                      Raça
                     </p>
-                    <p className="font-mono text-gray-800 font-bold text-xl tracking-wide">{selectedAnimal.chip}</p>
+                    <p className="text-gray-800 font-bold text-lg">{selectedAnimal.raca}</p>
                   </div>
                 )}
+
+                {/* Colónia */}
+                {selectedAnimal.colonia != null && (() => {
+                  const col = colonias.find((c: any) => c.id === selectedAnimal.colonia);
+                  return col ? (
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                      <p className="text-xs text-amber-500 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <MapPin size={10} /> Colónia
+                      </p>
+                      <p className="text-gray-800 font-semibold">{col.nome}</p>
+                    </div>
+                  ) : null;
+                })()}
+
                 {selectedAnimal.createdAt && (
                   <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
