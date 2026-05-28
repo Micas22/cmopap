@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const chip = searchParams.get("chip");
+
     const internamentos = await prisma.fichaInternamento.findMany({
+      where: chip ? { chip } : undefined,
       orderBy: { id: "desc" },
     });
     return NextResponse.json(internamentos);

@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     const titulo = formData.get("titulo") as string;
     const animalIdRaw = formData.get("animalid") as string;
     const ficheiro = formData.get("ficheiro") as File | null;
+    const created_at = formData.get("created_at") as string | null;
 
     if (!titulo || !animalIdRaw) {
       return NextResponse.json(
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       data: {
         titulo,
         animalid: animalId,
+        ...(created_at ? { created_at: new Date(created_at) } : {}),
         ...(ficheiroPath ? { ficheiro: ficheiroPath } : {}),
       },
     });
@@ -101,6 +103,7 @@ export async function PUT(request: Request) {
     const titulo = formData.get("titulo") as string;
     const ficheiro = formData.get("ficheiro") as File | null;
     const deleteFile = formData.get("deleteFile") as string | null;
+    const created_at = formData.get("created_at") as string | null;
 
     if (!idRaw || !titulo) {
       return NextResponse.json(
@@ -113,6 +116,7 @@ export async function PUT(request: Request) {
 
     const data: any = {
       titulo,
+      ...(created_at ? { created_at: new Date(created_at) } : {}),
     };
 
 

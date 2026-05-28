@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PawPrint, Pencil, Trash2, Plus, ChevronDown, Check,
@@ -8,7 +8,7 @@ import {
   AlertTriangle, Calendar, Weight, Ruler, Shield, FileText,
   Clock, UploadCloud, SortAsc, SortDesc,
   Users, Activity, Heart, Syringe, MapPin, Copy, CheckCheck,
-  ChevronRight, Layers,
+  ChevronRight, ChevronLeft, Layers,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,6 +22,11 @@ import Header from "@/components/Header";
 /* ─────────────────────────────────────────────────────────────────────────────
    SHARED PRIMITIVES
 ───────────────────────────────────────────────────────────────────────────── */
+
+const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const PT_DAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -148,6 +153,11 @@ export default function AdminAnimais() {
   // history
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const [animalHistory, setAnimalHistory] = useState<{ id: string; titulo: string; ficheiro?: string; created_at: string }[]>([]);
+  const [fichasInternamento, setFichasInternamento] = useState<any[]>([]);
+  const [tratamentos, setTratamentos] = useState<any[]>([]);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [selectedDay, setSelectedDay] = useState<string | null>(new Date().toISOString().slice(0, 10));
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [viewTab, setViewTab] = useState<"details" | "history">("details");
   const [createHistoryDialogOpen, setCreateHistoryDialogOpen] = useState(false);
@@ -264,17 +274,28 @@ export default function AdminAnimais() {
   const hasFilters = searchQuery || sexFilter !== null || coloniaFilter !== null || raceFilter;
 
   /* ── history ── */
-  const fetchAnimalHistory = async (id: number) => {
+  const fetchAnimalHistory = async (a: Animal) => {
     setIsLoadingHistory(true);
-    try { const r = await fetch(`/api/admin/animals/history?animalId=${id}`); if (r.ok) { const d = await r.json(); setAnimalHistory(Array.isArray(d) ? d : []); } }
-    catch (e) { console.error(e); } finally { setIsLoadingHistory(false); }
+    try {
+      const p1 = fetch(`/api/admin/animals/history?animalId=${a.id}`).then(r => r.ok ? r.json() : []);
+      const p2 = a.chip ? fetch(`/api/admin/internamentos?chip=${encodeURIComponent(a.chip)}`).then(r => r.ok ? r.json() : []) : Promise.resolve([]);
+      const p3 = fetch(`/api/admin/tratamentos`).then(r => r.ok ? r.json() : []);
+      const [history, fichas, trats] = await Promise.all([p1, p2, p3]);
+      setAnimalHistory(Array.isArray(history) ? history : []);
+      setFichasInternamento(Array.isArray(fichas) ? fichas : []);
+      const fichaIds = new Set((fichas as any[]).map(f => f.id));
+      setTratamentos((Array.isArray(trats) ? trats : []).filter(t => fichaIds.has(t.internamento)));
+      const d = new Date();
+      setCalYear(d.getFullYear()); setCalMonth(d.getMonth()); setSelectedDay(d.toISOString().slice(0, 10));
+    } catch (e) { console.error(e); } finally { setIsLoadingHistory(false); }
   };
-  const handleViewAnimal = async (a: Animal) => { setViewItem({ ...a }); setViewTab("details"); await fetchAnimalHistory(a.id); };
+  const handleViewAnimal = async (a: Animal) => { setViewItem({ ...a }); setViewTab("details"); await fetchAnimalHistory(a); };
 
   const handleCreateHistory = async () => {
     if (!newHistoryTitulo || !viewItem) return;
     try {
       const fd = new FormData(); fd.append("titulo", newHistoryTitulo); fd.append("animalid", String(viewItem.id));
+      if (selectedDay) fd.append("created_at", selectedDay);
       if (newHistoryFicheiro) fd.append("ficheiro", newHistoryFicheiro);
       const r = await fetch("/api/admin/animals/history", { method: "POST", body: fd });
       if (!r.ok) { alert(`Error: ${(await r.json()).error}`); return; }
@@ -377,6 +398,35 @@ export default function AdminAnimais() {
       setNewAnimalImage(null); setNewAnimalImagePreview(null); setNewAnimalArquivos(null); setNewAnimalColonia(null);
       setCreateAnimalDialogOpen(false);
     } catch (e) { console.error(e); alert("Erro ao criar animal."); }
+  };
+
+  const byDate = useMemo(() => {
+    const m: Record<string, { histories: any[], trats: any[] }> = {};
+    for (const h of animalHistory) {
+      const d = new Date(h.created_at).toISOString().slice(0, 10);
+      if (!m[d]) m[d] = { histories: [], trats: [] };
+      m[d].histories.push(h);
+    }
+    for (const t of tratamentos) {
+      const d = new Date(t.dia).toISOString().slice(0, 10);
+      if (!m[d]) m[d] = { histories: [], trats: [] };
+      m[d].trats.push(t);
+    }
+    return m;
+  }, [animalHistory, tratamentos]);
+
+  const daysInMonth = getDaysInMonth(calYear, calMonth);
+  const firstDay = getFirstDayOfMonth(calYear, calMonth);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const selectedItems = selectedDay ? (byDate[selectedDay] || { histories: [], trats: [] }) : { histories: [], trats: [] };
+
+  const navMonth = (dir: 1 | -1) => {
+    let m = calMonth + dir;
+    let y = calYear;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    setCalMonth(m); setCalYear(y);
   };
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -908,58 +958,126 @@ export default function AdminAnimais() {
                       )}
 
                       {viewTab === "history" && (
-                        <motion.div key="h" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-400 font-medium">{animalHistory.length} evento(s)</p>
-                            <Button onClick={() => setCreateHistoryDialogOpen(true)} size="sm"
-                              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl gap-1.5 h-8 text-xs font-bold">
-                              <Plus className="w-3.5 h-3.5" /> Novo Evento
-                            </Button>
-                          </div>
+                        <motion.div key="h" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6">
                           {isLoadingHistory ? (
                             <div className="flex justify-center py-14">
                               <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                             </div>
-                          ) : animalHistory.length === 0 ? (
-                            <div className="text-center py-14">
-                              <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                <Clock className="w-7 h-7 text-gray-200" />
-                              </div>
-                              <p className="text-sm font-bold text-gray-400">Sem histórico</p>
-                              <p className="text-xs text-gray-300 mt-1">Adicione o primeiro evento médico</p>
-                            </div>
                           ) : (
-                            <div className="relative pl-7">
-                              <div className="absolute left-2.5 top-1 bottom-1 w-px bg-gradient-to-b from-orange-300 via-orange-200 to-transparent" />
-                              <div className="space-y-3">
-                                {animalHistory.map(h => (
-                                  <div key={h.id} className="relative">
-                                    <div className="absolute -left-4.5 top-4 w-2.5 h-2.5 rounded-full bg-orange-400 border-2 border-white shadow-sm" style={{ left: "-18px" }} />
-                                    <div className="bg-gray-50 hover:bg-orange-50/60 border border-gray-100 hover:border-orange-100 rounded-2xl p-4 transition-colors group">
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                          <p className="font-bold text-gray-800 text-sm leading-snug">{h.titulo}</p>
-                                          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(h.created_at).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })}
-                                          </p>
-                                          {h.ficheiro && (
-                                            <a href={h.ficheiro} target="_blank" rel="noopener noreferrer"
-                                              className="inline-flex items-center gap-1.5 mt-2 text-xs text-orange-500 hover:text-orange-600 font-semibold">
-                                              <FileText className="w-3 h-3" /> Ver ficheiro
-                                            </a>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                          <button onClick={() => setEditHistoryItem({ id: h.id, titulo: h.titulo, ficheiro: h.ficheiro })}
-                                            className="p-1.5 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                                          <button onClick={() => setHistoryToDelete(h.id)}
-                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                                        </div>
+                            <div className="flex flex-col md:flex-row gap-5">
+                              {/* Calendar */}
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-4">
+                                  <button onClick={() => navMonth(-1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
+                                    <ChevronLeft className="w-4 h-4" />
+                                  </button>
+                                  <h3 className="text-sm font-extrabold text-gray-700 capitalize">
+                                    {PT_MONTHS[calMonth]} {calYear}
+                                  </h3>
+                                  <button onClick={() => navMonth(1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
+                                    <ChevronRight className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-7 mb-1">
+                                  {PT_DAYS_SHORT.map(d => <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-gray-300 py-1">{d}</div>)}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1">
+                                  {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
+                                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                                    const day = i + 1;
+                                    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                                    const hasItems = !!(byDate[dateStr]?.histories.length || byDate[dateStr]?.trats.length);
+                                    const isToday = dateStr === todayStr;
+                                    const isSelected = dateStr === selectedDay;
+                                    return (
+                                      <button key={day} onClick={() => setSelectedDay(dateStr)}
+                                        className={`relative aspect-square rounded-xl text-sm font-bold transition-all flex flex-col items-center justify-center gap-0.5
+                                          ${isSelected ? "bg-orange-500 text-white shadow-md shadow-orange-200" :
+                                            isToday ? "bg-orange-50 text-orange-600 border-2 border-orange-200" :
+                                              "hover:bg-gray-50 text-gray-600"}`}>
+                                        {day}
+                                        {hasItems && <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/70" : "bg-orange-400"}`} />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              
+                              {/* Day Panel */}
+                              <div className="md:w-64 flex flex-col">
+                                {selectedDay ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400">
+                                          {new Date(selectedDay + "T00:00:00").toLocaleDateString("pt-PT", { weekday: "long" })}
+                                        </p>
+                                        <p className="text-sm font-extrabold text-gray-800">{new Date(selectedDay).toLocaleDateString("pt-PT")}</p>
                                       </div>
+                                      <button onClick={() => setCreateHistoryDialogOpen(true)}
+                                        className="p-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-200 transition-colors">
+                                        <Plus className="w-4 h-4" />
+                                      </button>
                                     </div>
+                                    
+                                    <div className="flex-1 space-y-2 overflow-y-auto max-h-60 pr-0.5">
+                                      {selectedItems.histories.length === 0 && selectedItems.trats.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+                                          <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center">
+                                            <Clock className="w-5 h-5 text-gray-300" />
+                                          </div>
+                                          <p className="text-xs text-gray-400 font-medium">Sem eventos neste dia</p>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          {selectedItems.trats.map((t: any) => (
+                                            <motion.div key={`t-${t.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                                              className="group flex items-start gap-2.5 p-3 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm transition-all">
+                                              <div className="w-7 h-7 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Syringe className="w-3.5 h-3.5 text-blue-500" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Tratamento</p>
+                                                <p className="text-sm font-bold text-gray-800 truncate">{t.medicacao}</p>
+                                                {t.dose && <p className="text-xs text-gray-500">{t.dose}</p>}
+                                              </div>
+                                            </motion.div>
+                                          ))}
+                                          {selectedItems.histories.map((h: any) => (
+                                            <motion.div key={`h-${h.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                                              className="group flex items-start gap-2.5 p-3 bg-white rounded-2xl border border-gray-100 hover:border-orange-100 shadow-sm transition-all">
+                                              <div className="w-7 h-7 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Clock className="w-3.5 h-3.5 text-orange-400" />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-800 leading-snug">{h.titulo}</p>
+                                                {h.ficheiro && (
+                                                  <a href={h.ficheiro} target="_blank" rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 mt-1 text-[11px] text-orange-500 hover:text-orange-600 font-semibold">
+                                                    <FileText className="w-3 h-3" /> Ver ficheiro
+                                                  </a>
+                                                )}
+                                              </div>
+                                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                                <button onClick={() => setEditHistoryItem({ id: h.id, titulo: h.titulo, ficheiro: h.ficheiro })}
+                                                  className="p-1.5 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => setHistoryToDelete(h.id)}
+                                                  className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                              </div>
+                                            </motion.div>
+                                          ))}
+                                        </>
+                                      )}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center flex-1 py-12 gap-3 text-center">
+                                    <div className="w-14 h-14 bg-orange-50 rounded-3xl flex items-center justify-center">
+                                      <Calendar className="w-7 h-7 text-orange-300" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-500">Selecione um dia</p>
                                   </div>
-                                ))}
+                                )}
                               </div>
                             </div>
                           )}
