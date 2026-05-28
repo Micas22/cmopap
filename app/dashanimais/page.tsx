@@ -8,7 +8,7 @@ import {
   AlertTriangle, Calendar, Weight, Ruler, Shield, FileText,
   Clock, UploadCloud, SortAsc, SortDesc,
   Users, Activity, Heart, Syringe, MapPin, Copy, CheckCheck,
-  ChevronRight, ChevronLeft, Layers,
+  ChevronRight, ChevronLeft, Layers, LayoutList,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -122,6 +122,199 @@ function StatCard({ icon: Icon, label, value, sub, color, bg }: { icon: any; lab
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   TIMELINE VIEW
+───────────────────────────────────────────────────────────────────────────── */
+function TimelineView({
+  byDate,
+  onAddEvent,
+  onEditHistory,
+  onDeleteHistory,
+  onUploadTratamento,
+}: {
+  byDate: Record<string, { histories: any[]; trats: any[] }>;
+  onAddEvent: (day: string) => void;
+  onEditHistory: (h: any) => void;
+  onDeleteHistory: (id: string) => void;
+  onUploadTratamento: (id: number, files: File[]) => void;
+}) {
+  const allDates = Object.keys(byDate)
+    .filter(d => byDate[d].histories.length > 0 || byDate[d].trats.length > 0)
+    .sort((a, b) => (a < b ? 1 : -1));
+
+  if (allDates.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-16 gap-3 text-center"
+      >
+        <div className="w-14 h-14 bg-orange-50 rounded-3xl flex items-center justify-center">
+          <LayoutList className="w-7 h-7 text-orange-200" />
+        </div>
+        <p className="text-sm font-bold text-gray-400">Sem eventos registados</p>
+        <p className="text-xs text-gray-300">Os eventos aparecerão aqui como uma cronologia</p>
+      </motion.div>
+    );
+  }
+
+  // Group by year-month for section headers
+  const grouped: { label: string; dates: string[] }[] = [];
+  for (const d of allDates) {
+    const [y, m] = d.split("-");
+    const label = `${PT_MONTHS[parseInt(m, 10) - 1]} ${y}`;
+    const last = grouped[grouped.length - 1];
+    if (last && last.label === label) last.dates.push(d);
+    else grouped.push({ label, dates: [d] });
+  }
+
+  return (
+    <motion.div
+      key="timeline"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className="relative pb-4"
+    >
+      {/* Vertical rail */}
+      <div className="absolute left-[22px] top-0 bottom-0 w-px bg-gradient-to-b from-orange-200 via-orange-100 to-transparent" />
+
+      {grouped.map((group, gi) => (
+        <div key={group.label} className="mb-1">
+          {/* Month label */}
+          <motion.div
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: gi * 0.06 }}
+            className="flex items-center gap-3 mb-3 mt-4 first:mt-0"
+          >
+            <div className="w-11 h-11 flex-shrink-0" /> {/* spacer for rail */}
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-400 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">
+              {group.label}
+            </span>
+          </motion.div>
+
+          {group.dates.map((dateStr, di) => {
+            const items = byDate[dateStr];
+            const dateObj = new Date(dateStr + "T00:00:00");
+            const dayNum = dateObj.getDate();
+            const weekday = dateObj.toLocaleDateString("pt-PT", { weekday: "short" });
+            const totalItems = items.histories.length + items.trats.length;
+
+            return (
+              <motion.div
+                key={dateStr}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: gi * 0.06 + di * 0.04, duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                className="flex gap-3 mb-3"
+              >
+                {/* Date bubble on rail */}
+                <div className="flex-shrink-0 flex flex-col items-center w-11">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 flex flex-col items-center justify-center shadow-md shadow-orange-200/60 z-10 relative">
+                    <span className="text-white text-base font-extrabold leading-none">{dayNum}</span>
+                    <span className="text-white/70 text-[9px] font-bold uppercase tracking-wider">{weekday}</span>
+                  </div>
+                </div>
+
+                {/* Events card */}
+                <div className="flex-1 min-w-0 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                  {/* Card header */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-50 bg-gray-50/40">
+                    <span className="text-[10px] text-gray-400 font-bold">
+                      {totalItems} evento{totalItems !== 1 ? "s" : ""}
+                    </span>
+                    <button
+                      onClick={() => onAddEvent(dateStr)}
+                      className="p-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="p-2 space-y-1.5">
+                    {items.trats.map((t: any, idx: number) => (
+                      <motion.div
+                        key={`t-${t.id}`}
+                        initial={{ opacity: 0, x: 6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 * idx }}
+                        className="flex items-start gap-2 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100"
+                      >
+                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Syringe className="w-3 h-3 text-blue-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Tratamento</p>
+                          <p className="text-xs font-bold text-gray-800 truncate">{t.medicacao}</p>
+                          {t.dose && <p className="text-[10px] text-gray-500">{t.dose}</p>}
+                          {t.arquivos && t.arquivos.split(",").filter(Boolean).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {t.arquivos.split(",").filter(Boolean).map((arq: string, i: number) => (
+                                <a key={i} href={arq} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-semibold">
+                                  <FileText className="w-2.5 h-2.5" /> Ficheiro {i + 1}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          <label className="inline-flex items-center gap-1 mt-1 text-[9px] bg-white text-blue-400 border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-50 cursor-pointer font-semibold">
+                            <UploadCloud className="w-2.5 h-2.5" /> Anexar
+                            <input type="file" multiple accept="*" className="sr-only"
+                              onChange={e => {
+                                const files = e.target.files ? Array.from(e.target.files) : [];
+                                if (files.length) onUploadTratamento(t.id, files);
+                                e.target.value = "";
+                              }} />
+                          </label>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {items.histories.map((h: any, idx: number) => (
+                      <motion.div
+                        key={`h-${h.id}`}
+                        initial={{ opacity: 0, x: 6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 * (items.trats.length + idx) }}
+                        className="group flex items-start gap-2 p-2.5 bg-white rounded-xl border border-gray-100 hover:border-orange-100 transition-colors"
+                      >
+                        <div className="w-6 h-6 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Clock className="w-3 h-3 text-orange-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-gray-800 leading-snug">{h.titulo}</p>
+                          {h.ficheiro && (
+                            <a href={h.ficheiro} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-0.5 text-[10px] text-orange-500 hover:text-orange-600 font-semibold">
+                              <FileText className="w-2.5 h-2.5" /> Ver ficheiro
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <button onClick={() => onEditHistory({ id: h.id, titulo: h.titulo, ficheiro: h.ficheiro })}
+                            className="p-1 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => onDeleteHistory(h.id)}
+                            className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
 export default function AdminAnimais() {
@@ -160,6 +353,7 @@ export default function AdminAnimais() {
   const [selectedDay, setSelectedDay] = useState<string | null>(new Date().toISOString().slice(0, 10));
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [viewTab, setViewTab] = useState<"details" | "history">("details");
+  const [historyView, setHistoryView] = useState<"calendar" | "timeline">("calendar");
   const [createHistoryDialogOpen, setCreateHistoryDialogOpen] = useState(false);
   const [editHistoryItem, setEditHistoryItem] = useState<{ id: string; titulo: string; ficheiro?: string } | null>(null);
   const [newHistoryTitulo, setNewHistoryTitulo] = useState("");
@@ -894,16 +1088,47 @@ export default function AdminAnimais() {
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex border-b border-gray-100 bg-white px-2">
-                    {[{ key: "details", label: "Detalhes" }, { key: "history", label: "Histórico" }].map(tab => (
-                      <button key={tab.key} onClick={() => setViewTab(tab.key as any)}
-                        className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all ${viewTab === tab.key ? "border-orange-500 text-orange-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-                        {tab.label}
-                        {tab.key === "history" && animalHistory.length > 0 && (
-                          <span className="ml-2 bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{animalHistory.length}</span>
-                        )}
-                      </button>
-                    ))}
+                  <div className="flex items-center border-b border-gray-100 bg-white px-2">
+                    <div className="flex flex-1">
+                      {[{ key: "details", label: "Detalhes" }, { key: "history", label: "Histórico" }].map(tab => (
+                        <button key={tab.key} onClick={() => setViewTab(tab.key as any)}
+                          className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all ${viewTab === tab.key ? "border-orange-500 text-orange-600" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+                          {tab.label}
+                          {tab.key === "history" && animalHistory.length > 0 && (
+                            <span className="ml-2 bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{animalHistory.length}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    {/* View toggle — only visible on history tab */}
+                    <AnimatePresence>
+                      {viewTab === "history" && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.85 }}
+                          transition={{ duration: 0.18 }}
+                          className="flex items-center gap-1 mr-1"
+                        >
+                          <div className="flex items-center p-0.5 bg-gray-100 rounded-xl gap-0.5">
+                            <button
+                              onClick={() => setHistoryView("calendar")}
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${historyView === "calendar" ? "bg-white text-orange-600 shadow-sm shadow-black/10" : "text-gray-400 hover:text-gray-600"}`}
+                            >
+                              <Calendar className="w-3 h-3" />
+                              <span className="hidden sm:inline">Calendário</span>
+                            </button>
+                            <button
+                              onClick={() => setHistoryView("timeline")}
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${historyView === "timeline" ? "bg-white text-orange-600 shadow-sm shadow-black/10" : "text-gray-400 hover:text-gray-600"}`}
+                            >
+                              <LayoutList className="w-3 h-3" />
+                              <span className="hidden sm:inline">Cronologia</span>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Body */}
@@ -994,141 +1219,161 @@ export default function AdminAnimais() {
                               <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                             </div>
                           ) : (
-                            <div className="flex flex-col md:flex-row gap-5">
-                              {/* Calendar */}
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-4">
-                                  <button onClick={() => navMonth(-1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
-                                    <ChevronLeft className="w-4 h-4" />
-                                  </button>
-                                  <h3 className="text-sm font-extrabold text-gray-700 capitalize">
-                                    {PT_MONTHS[calMonth]} {calYear}
-                                  </h3>
-                                  <button onClick={() => navMonth(1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
-                                    <ChevronRight className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <div className="grid grid-cols-7 mb-1">
-                                  {PT_DAYS_SHORT.map(d => <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-gray-300 py-1">{d}</div>)}
-                                </div>
-                                <div className="grid grid-cols-7 gap-1">
-                                  {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
-                                  {Array.from({ length: daysInMonth }).map((_, i) => {
-                                    const day = i + 1;
-                                    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                                    const hasItems = !!(byDate[dateStr]?.histories.length || byDate[dateStr]?.trats.length);
-                                    const isToday = dateStr === todayStr;
-                                    const isSelected = dateStr === selectedDay;
-                                    return (
-                                      <button key={day} onClick={() => setSelectedDay(dateStr)}
-                                        className={`relative aspect-square rounded-xl text-sm font-bold transition-all flex flex-col items-center justify-center gap-0.5
-                                          ${isSelected ? "bg-orange-500 text-white shadow-md shadow-orange-200" :
-                                            isToday ? "bg-orange-50 text-orange-600 border-2 border-orange-200" :
-                                              "hover:bg-gray-50 text-gray-600"}`}>
-                                        {day}
-                                        {hasItems && <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/70" : "bg-orange-400"}`} />}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                              
-                              {/* Day Panel */}
-                              <div className="md:w-64 flex flex-col">
-                                {selectedDay ? (
-                                  <>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400">
-                                          {new Date(selectedDay + "T00:00:00").toLocaleDateString("pt-PT", { weekday: "long" })}
-                                        </p>
-                                        <p className="text-sm font-extrabold text-gray-800">{new Date(selectedDay).toLocaleDateString("pt-PT")}</p>
+                            <AnimatePresence mode="wait">
+                              {historyView === "calendar" ? (
+                                <motion.div
+                                  key="calendar-view"
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -20 }}
+                                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                                >
+                                  <div className="flex flex-col md:flex-row gap-5">
+                                    {/* Calendar */}
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <button onClick={() => navMonth(-1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
+                                          <ChevronLeft className="w-4 h-4" />
+                                        </button>
+                                        <h3 className="text-sm font-extrabold text-gray-700 capitalize">
+                                          {PT_MONTHS[calMonth]} {calYear}
+                                        </h3>
+                                        <button onClick={() => navMonth(1)} className="p-2 rounded-xl hover:bg-orange-50 text-gray-400 hover:text-orange-500 transition-colors">
+                                          <ChevronRight className="w-4 h-4" />
+                                        </button>
                                       </div>
-                                      <button onClick={() => setCreateHistoryDialogOpen(true)}
-                                        className="p-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-200 transition-colors">
-                                        <Plus className="w-4 h-4" />
-                                      </button>
+                                      <div className="grid grid-cols-7 mb-1">
+                                        {PT_DAYS_SHORT.map(d => <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-gray-300 py-1">{d}</div>)}
+                                      </div>
+                                      <div className="grid grid-cols-7 gap-1">
+                                        {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
+                                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                                          const day = i + 1;
+                                          const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                                          const hasItems = !!(byDate[dateStr]?.histories.length || byDate[dateStr]?.trats.length);
+                                          const isToday = dateStr === todayStr;
+                                          const isSelected = dateStr === selectedDay;
+                                          return (
+                                            <button key={day} onClick={() => setSelectedDay(dateStr)}
+                                              className={`relative aspect-square rounded-xl text-sm font-bold transition-all flex flex-col items-center justify-center gap-0.5
+                                          ${isSelected ? "bg-orange-500 text-white shadow-md shadow-orange-200" :
+                                                  isToday ? "bg-orange-50 text-orange-600 border-2 border-orange-200" :
+                                                    "hover:bg-gray-50 text-gray-600"}`}>
+                                              {day}
+                                              {hasItems && <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/70" : "bg-orange-400"}`} />}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
-                                    
-                                    <div className="flex-1 space-y-2 overflow-y-auto max-h-60 pr-0.5">
-                                      {selectedItems.histories.length === 0 && selectedItems.trats.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                                          <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center">
-                                            <Clock className="w-5 h-5 text-gray-300" />
-                                          </div>
-                                          <p className="text-xs text-gray-400 font-medium">Sem eventos neste dia</p>
-                                        </div>
-                                      ) : (
+
+                                    {/* Day Panel */}
+                                    <div className="md:w-64 flex flex-col">
+                                      {selectedDay ? (
                                         <>
-                                          {selectedItems.trats.map((t: any) => (
-                                            <motion.div key={`t-${t.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
-                                              className="group flex items-start gap-2.5 p-3 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm transition-all">
-                                              <div className="w-7 h-7 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Syringe className="w-3.5 h-3.5 text-blue-500" />
+                                          <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400">
+                                                {new Date(selectedDay + "T00:00:00").toLocaleDateString("pt-PT", { weekday: "long" })}
+                                              </p>
+                                              <p className="text-sm font-extrabold text-gray-800">{new Date(selectedDay).toLocaleDateString("pt-PT")}</p>
+                                            </div>
+                                            <button onClick={() => setCreateHistoryDialogOpen(true)}
+                                              className="p-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-200 transition-colors">
+                                              <Plus className="w-4 h-4" />
+                                            </button>
+                                          </div>
+
+                                          <div className="flex-1 space-y-2 overflow-y-auto max-h-60 pr-0.5">
+                                            {selectedItems.histories.length === 0 && selectedItems.trats.length === 0 ? (
+                                              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+                                                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center">
+                                                  <Clock className="w-5 h-5 text-gray-300" />
+                                                </div>
+                                                <p className="text-xs text-gray-400 font-medium">Sem eventos neste dia</p>
                                               </div>
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Tratamento</p>
-                                                <p className="text-sm font-bold text-gray-800 truncate">{t.medicacao}</p>
-                                                {t.dose && <p className="text-xs text-gray-500">{t.dose}</p>}
-                                                {t.arquivos && t.arquivos.split(",").filter(Boolean).length > 0 && (
-                                                  <div className="flex flex-wrap gap-1 mt-1.5">
-                                                    {t.arquivos.split(",").filter(Boolean).map((arq: string, idx: number) => (
-                                                      <a key={idx} href={arq} target="_blank" rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md hover:bg-blue-200 transition-colors font-semibold">
-                                                        <FileText className="w-3 h-3" /> Ficheiro {idx + 1}
-                                                      </a>
-                                                    ))}
-                                                  </div>
-                                                )}
-                                                <label className="inline-flex items-center gap-1 mt-1.5 text-[10px] bg-white text-blue-400 border border-blue-200 px-1.5 py-0.5 rounded-md hover:bg-blue-50 cursor-pointer transition-colors font-semibold">
-                                                  <UploadCloud className="w-3 h-3" /> Anexar ficheiro
-                                                  <input type="file" multiple accept="*" className="sr-only"
-                                                    onChange={e => {
-                                                      const files = e.target.files ? Array.from(e.target.files) : [];
-                                                      if (files.length) handleUploadTratamentoArquivos(t.id, files);
-                                                      e.target.value = "";
-                                                    }} />
-                                                </label>
-                                              </div>
-                                            </motion.div>
-                                          ))}
-                                          {selectedItems.histories.map((h: any) => (
-                                            <motion.div key={`h-${h.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
-                                              className="group flex items-start gap-2.5 p-3 bg-white rounded-2xl border border-gray-100 hover:border-orange-100 shadow-sm transition-all">
-                                              <div className="w-7 h-7 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Clock className="w-3.5 h-3.5 text-orange-400" />
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-gray-800 leading-snug">{h.titulo}</p>
-                                                {h.ficheiro && (
-                                                  <a href={h.ficheiro} target="_blank" rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 mt-1 text-[11px] text-orange-500 hover:text-orange-600 font-semibold">
-                                                    <FileText className="w-3 h-3" /> Ver ficheiro
-                                                  </a>
-                                                )}
-                                              </div>
-                                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                <button onClick={() => setEditHistoryItem({ id: h.id, titulo: h.titulo, ficheiro: h.ficheiro })}
-                                                  className="p-1.5 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                                                <button onClick={() => setHistoryToDelete(h.id)}
-                                                  className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                                              </div>
-                                            </motion.div>
-                                          ))}
+                                            ) : (
+                                              <>
+                                                {selectedItems.trats.map((t: any) => (
+                                                  <motion.div key={`t-${t.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                                                    className="group flex items-start gap-2.5 p-3 bg-blue-50/50 rounded-2xl border border-blue-100 shadow-sm transition-all">
+                                                    <div className="w-7 h-7 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                      <Syringe className="w-3.5 h-3.5 text-blue-500" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Tratamento</p>
+                                                      <p className="text-sm font-bold text-gray-800 truncate">{t.medicacao}</p>
+                                                      {t.dose && <p className="text-xs text-gray-500">{t.dose}</p>}
+                                                      {t.arquivos && t.arquivos.split(",").filter(Boolean).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                                          {t.arquivos.split(",").filter(Boolean).map((arq: string, idx: number) => (
+                                                            <a key={idx} href={arq} target="_blank" rel="noopener noreferrer"
+                                                              className="inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md hover:bg-blue-200 transition-colors font-semibold">
+                                                              <FileText className="w-3 h-3" /> Ficheiro {idx + 1}
+                                                            </a>
+                                                          ))}
+                                                        </div>
+                                                      )}
+                                                      <label className="inline-flex items-center gap-1 mt-1.5 text-[10px] bg-white text-blue-400 border border-blue-200 px-1.5 py-0.5 rounded-md hover:bg-blue-50 cursor-pointer transition-colors font-semibold">
+                                                        <UploadCloud className="w-3 h-3" /> Anexar ficheiro
+                                                        <input type="file" multiple accept="*" className="sr-only"
+                                                          onChange={e => {
+                                                            const files = e.target.files ? Array.from(e.target.files) : [];
+                                                            if (files.length) handleUploadTratamentoArquivos(t.id, files);
+                                                            e.target.value = "";
+                                                          }} />
+                                                      </label>
+                                                    </div>
+                                                  </motion.div>
+                                                ))}
+                                                {selectedItems.histories.map((h: any) => (
+                                                  <motion.div key={`h-${h.id}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                                                    className="group flex items-start gap-2.5 p-3 bg-white rounded-2xl border border-gray-100 hover:border-orange-100 shadow-sm transition-all">
+                                                    <div className="w-7 h-7 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                      <Clock className="w-3.5 h-3.5 text-orange-400" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                      <p className="text-sm font-bold text-gray-800 leading-snug">{h.titulo}</p>
+                                                      {h.ficheiro && (
+                                                        <a href={h.ficheiro} target="_blank" rel="noopener noreferrer"
+                                                          className="inline-flex items-center gap-1 mt-1 text-[11px] text-orange-500 hover:text-orange-600 font-semibold">
+                                                          <FileText className="w-3 h-3" /> Ver ficheiro
+                                                        </a>
+                                                      )}
+                                                    </div>
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                                      <button onClick={() => setEditHistoryItem({ id: h.id, titulo: h.titulo, ficheiro: h.ficheiro })}
+                                                        className="p-1.5 text-gray-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                                                      <button onClick={() => setHistoryToDelete(h.id)}
+                                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                    </div>
+                                                  </motion.div>
+                                                ))}
+                                              </>
+                                            )}
+                                          </div>
                                         </>
+                                      ) : (
+                                        <div className="flex flex-col items-center justify-center flex-1 py-12 gap-3 text-center">
+                                          <div className="w-14 h-14 bg-orange-50 rounded-3xl flex items-center justify-center">
+                                            <Calendar className="w-7 h-7 text-orange-300" />
+                                          </div>
+                                          <p className="text-sm font-bold text-gray-500">Selecione um dia</p>
+                                        </div>
                                       )}
                                     </div>
-                                  </>
-                                ) : (
-                                  <div className="flex flex-col items-center justify-center flex-1 py-12 gap-3 text-center">
-                                    <div className="w-14 h-14 bg-orange-50 rounded-3xl flex items-center justify-center">
-                                      <Calendar className="w-7 h-7 text-orange-300" />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-500">Selecione um dia</p>
                                   </div>
-                                )}
-                              </div>
-                            </div>
+                                </motion.div>
+                              ) : (
+                                <TimelineView
+                                  byDate={byDate}
+                                  onAddEvent={(day) => { setSelectedDay(day); setCreateHistoryDialogOpen(true); }}
+                                  onEditHistory={setEditHistoryItem}
+                                  onDeleteHistory={setHistoryToDelete}
+                                  onUploadTratamento={handleUploadTratamentoArquivos}
+                                />
+                              )}
+                            </AnimatePresence>
                           )}
                         </motion.div>
                       )}
