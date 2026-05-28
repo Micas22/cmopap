@@ -432,6 +432,21 @@ export default function AdminAnimais() {
     setCalMonth(m); setCalYear(y);
   };
 
+  const handleUploadTratamentoArquivos = async (tratId: number, files: File[]) => {
+    if (!files.length) return;
+    try {
+      const fd = new FormData();
+      fd.append("id", String(tratId));
+      files.forEach(f => fd.append("arquivos", f));
+      const r = await fetch("/api/admin/tratamentos", { method: "PUT", body: fd });
+      if (r.ok) {
+        const updated = await r.json();
+        updated.dia = updated.dia ? new Date(updated.dia).toISOString().slice(0, 10) : "";
+        setTratamentos(p => p.map(t => t.id === updated.id ? updated : t));
+      }
+    } catch (e) { console.error(e); }
+  };
+
   /* ─────────────────────────────────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────────────────────────────────── */
@@ -1055,6 +1070,25 @@ export default function AdminAnimais() {
                                                 <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">Tratamento</p>
                                                 <p className="text-sm font-bold text-gray-800 truncate">{t.medicacao}</p>
                                                 {t.dose && <p className="text-xs text-gray-500">{t.dose}</p>}
+                                                {t.arquivos && t.arquivos.split(",").filter(Boolean).length > 0 && (
+                                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                                    {t.arquivos.split(",").filter(Boolean).map((arq: string, idx: number) => (
+                                                      <a key={idx} href={arq} target="_blank" rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-md hover:bg-blue-200 transition-colors font-semibold">
+                                                        <FileText className="w-3 h-3" /> Ficheiro {idx + 1}
+                                                      </a>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                                <label className="inline-flex items-center gap-1 mt-1.5 text-[10px] bg-white text-blue-400 border border-blue-200 px-1.5 py-0.5 rounded-md hover:bg-blue-50 cursor-pointer transition-colors font-semibold">
+                                                  <UploadCloud className="w-3 h-3" /> Anexar ficheiro
+                                                  <input type="file" multiple accept="*" className="sr-only"
+                                                    onChange={e => {
+                                                      const files = e.target.files ? Array.from(e.target.files) : [];
+                                                      if (files.length) handleUploadTratamentoArquivos(t.id, files);
+                                                      e.target.value = "";
+                                                    }} />
+                                                </label>
                                               </div>
                                             </motion.div>
                                           ))}

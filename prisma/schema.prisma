@@ -156,5 +156,6 @@ model Tratamento {
   medicacao String
   dose String
   dia DateTime @default(now()) @db.Timestamp(6)
-  internamento Int   
+  internamento Int
+  arquivos            String
 }

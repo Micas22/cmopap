@@ -6,7 +6,7 @@ import {
     Plus, Search, Pencil, Trash2, AlertTriangle, Calendar,
     User, FileDown, ChevronRight, Eye, SortDesc, SortAsc,
     Dog, Syringe, X, ChevronLeft, CheckCircle2, Clock,
-    Weight, Cpu, Thermometer, ClipboardList, Zap,
+    Weight, Cpu, Thermometer, ClipboardList, Zap, UploadCloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ type Tratamento = {
     dose: string;
     dia: string; // YYYY-MM-DD
     internamento: number;
+    arquivos?: string;
 };
 
 type AnimalOption = { id: number; nome: string; raca: string; peso: number; chip: string; data_nascimento?: string; };
@@ -48,7 +49,7 @@ const emptyFicha = (): Omit<FichaInternamento, "id"> => ({
 
 const emptyTratamento = (internamentoId: number): Omit<Tratamento, "id"> => ({
     medicacao: "", dose: "", dia: new Date().toISOString().slice(0, 10),
-    internamento: internamentoId,
+    internamento: internamentoId, arquivos: "",
 });
 
 const formatDate = (iso: string) => {
@@ -136,11 +137,12 @@ function AnimalPicker({ animals, onSelect, onClose }: {
 /* ─────────────────────────────────────────────────────────────────────────────
    TRATAMENTOS CALENDAR
 ───────────────────────────────────────────────────────────────────────────── */
-function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
+function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete, onUpload }: {
     ficha: FichaInternamento;
     tratamentos: Tratamento[];
-    onAdd: (t: Omit<Tratamento, "id">) => void;
+    onAdd: (t: Omit<Tratamento, "id"> & { arquivosFiles?: File[] }) => void;
     onDelete: (id: number) => void;
+    onUpload: (id: number, files: File[]) => void;
 }) {
     const today = new Date();
     const [calYear, setCalYear] = useState(today.getFullYear());
@@ -148,6 +150,7 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
     const [addOpen, setAddOpen] = useState(false);
     const [newT, setNewT] = useState({ medicacao: "", dose: "" });
+    const [newTFiles, setNewTFiles] = useState<File[]>([]);
 
     const daysInMonth = getDaysInMonth(calYear, calMonth);
     const firstDay = getFirstDayOfMonth(calYear, calMonth);
@@ -175,8 +178,9 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
 
     const handleAdd = () => {
         if (!selectedDay || !newT.medicacao.trim()) return;
-        onAdd({ medicacao: newT.medicacao, dose: newT.dose, dia: selectedDay, internamento: ficha.id });
+        onAdd({ medicacao: newT.medicacao, dose: newT.dose, dia: selectedDay, internamento: ficha.id, arquivosFiles: newTFiles });
         setNewT({ medicacao: "", dose: "" });
+        setNewTFiles([]);
         setAddOpen(false);
     };
 
@@ -269,6 +273,13 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
                                     <Input placeholder="Dose…" value={newT.dose}
                                         onChange={e => setNewT(p => ({ ...p, dose: e.target.value }))}
                                         className="rounded-xl border-2 border-orange-100 focus:border-orange-300 focus:ring-0 text-sm bg-white" />
+                                    <div className="flex items-center gap-2">
+                                        <label className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border-2 border-dashed border-gray-200 cursor-pointer hover:border-orange-300 hover:bg-orange-50/40 transition-colors text-xs font-semibold text-gray-400 hover:text-orange-500">
+                                            <UploadCloud className="w-3.5 h-3.5" />
+                                            {newTFiles.length ? `${newTFiles.length} ficheiro(s)` : "Anexar ficheiros"}
+                                            <input type="file" multiple accept="*" className="sr-only" onChange={e => setNewTFiles(e.target.files ? Array.from(e.target.files) : [])} />
+                                        </label>
+                                    </div>
                                     <div className="flex gap-2">
                                         <button onClick={handleAdd}
                                             className="flex-1 py-1.5 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition-colors">
@@ -302,6 +313,25 @@ function TratamentosCalendar({ ficha, tratamentos, onAdd, onDelete }: {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-gray-800 truncate">{t.medicacao}</p>
                                         {t.dose && <p className="text-xs text-gray-400">{t.dose}</p>}
+                                        {t.arquivos && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {t.arquivos.split(",").filter(Boolean).map((arq, idx) => (
+                                                    <a key={idx} href={arq} target="_blank" rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[10px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded-md hover:bg-orange-100 transition-colors">
+                                                        <FileDown className="w-3 h-3" /> Ficheiro {idx + 1}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <label className="inline-flex items-center gap-1 mt-1 text-[10px] bg-gray-50 text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded-md hover:bg-orange-50 hover:text-orange-500 hover:border-orange-200 cursor-pointer transition-colors font-semibold">
+                                            <UploadCloud className="w-3 h-3" /> Anexar ficheiro
+                                            <input type="file" multiple accept="*" className="sr-only"
+                                                onChange={e => {
+                                                    const files = e.target.files ? Array.from(e.target.files) : [];
+                                                    if (files.length) onUpload(t.id, files);
+                                                    e.target.value = "";
+                                                }} />
+                                        </label>
                                     </div>
                                     <button onClick={() => onDelete(t.id)}
                                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition-all">
@@ -657,12 +687,23 @@ export default function FichasInternamento() {
         }
     };
 
-    const handleAddTratamento = async (t: Omit<Tratamento, "id">) => {
+    const handleAddTratamento = async (t: Omit<Tratamento, "id"> & { arquivosFiles?: File[] }) => {
         try {
+            const formData = new FormData();
+            formData.append("medicacao", t.medicacao);
+            formData.append("dose", t.dose);
+            formData.append("dia", t.dia);
+            formData.append("internamento", String(t.internamento));
+            
+            if (t.arquivosFiles && t.arquivosFiles.length > 0) {
+                for (const file of t.arquivosFiles) {
+                    formData.append("arquivos", file);
+                }
+            }
+
             const res = await fetch("/api/admin/tratamentos", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(t)
+                body: formData
             });
             if (res.ok) {
                 const newTrat = await res.json();
@@ -683,6 +724,23 @@ export default function FichasInternamento() {
             });
             if (res.ok) {
                 setTratamentos(p => p.filter(t => t.id !== id));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleUploadTratamento = async (id: number, files: File[]) => {
+        if (!files.length) return;
+        try {
+            const fd = new FormData();
+            fd.append("id", String(id));
+            files.forEach(f => fd.append("arquivos", f));
+            const res = await fetch("/api/admin/tratamentos", { method: "PUT", body: fd });
+            if (res.ok) {
+                const updated = await res.json();
+                updated.dia = updated.dia ? new Date(updated.dia).toISOString().slice(0, 10) : "";
+                setTratamentos(p => p.map(t => t.id === updated.id ? updated : t));
             }
         } catch (error) {
             console.error(error);
@@ -941,6 +999,7 @@ export default function FichasInternamento() {
                                         tratamentos={tratamentos.filter(t => t.internamento === viewItem.id)}
                                         onAdd={handleAddTratamento}
                                         onDelete={handleDeleteTratamento}
+                                        onUpload={handleUploadTratamento}
                                     />
                                 </div>
                             </div>
