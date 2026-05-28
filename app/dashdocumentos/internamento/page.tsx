@@ -36,7 +36,7 @@ type Tratamento = {
     internamento: number;
 };
 
-type AnimalOption = { id: number; nome: string; raca: string; peso: number; chip: string; };
+type AnimalOption = { id: number; nome: string; raca: string; peso: number; chip: string; data_nascimento?: string; };
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -355,7 +355,16 @@ function FichaForm({ data, setData, animals }: {
                             className="overflow-hidden">
                             <div className="pt-2">
                                 <AnimalPicker animals={animals} onSelect={a => {
-                                    setData({ ...data, nome: a.nome || "", raca: a.raca || "", peso: a.peso || 0, chip: a.chip || "" });
+                                    let calculatedIdade = 0;
+                                    if (a.data_nascimento) {
+                                        const bd = new Date(a.data_nascimento);
+                                        const now = new Date();
+                                        let age = now.getFullYear() - bd.getFullYear();
+                                        const m = now.getMonth() - bd.getMonth();
+                                        if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
+                                        calculatedIdade = age;
+                                    }
+                                    setData({ ...data, nome: a.nome || "", raca: a.raca || "", peso: a.peso || 0, chip: a.chip || "", idade: calculatedIdade });
                                     setShowPicker(false);
                                 }} onClose={() => setShowPicker(false)} />
                             </div>

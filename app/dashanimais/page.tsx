@@ -178,6 +178,7 @@ export default function AdminAnimais() {
   const [newAnimalPeso, setNewAnimalPeso] = useState("");
   const [newAnimalEsterelizacao, setNewAnimalEsterelizacao] = useState<number | null>(null);
   const [newAnimalObservacoes, setNewAnimalObservacoes] = useState("");
+  const [newAnimalDataNascimento, setNewAnimalDataNascimento] = useState("");
   const [newAnimalDataUltimaVacina, setNewAnimalDataUltimaVacina] = useState("");
   const [newAnimalDataProximaVacina, setNewAnimalDataProximaVacina] = useState("");
   const [createSexOpen, setCreateSexOpen] = useState(false);
@@ -388,6 +389,7 @@ export default function AdminAnimais() {
       if (newAnimalColonia !== null) fd.append("colonia", String(newAnimalColonia));
       if (newAnimalDataUltimaVacina) fd.append("data_ultima_vacina", newAnimalDataUltimaVacina);
       if (newAnimalDataProximaVacina) fd.append("data_proxima_vacina", newAnimalDataProximaVacina);
+      if (newAnimalDataNascimento) fd.append("data_nascimento", newAnimalDataNascimento);
       if (newAnimalArquivos?.length) newAnimalArquivos.forEach(f => fd.append("arquivos", f));
       const r = await fetch("/api/admin/animals", { method: "POST", body: fd });
       if (!r.ok) { alert(`Error: ${(await r.json()).error}`); return; }
@@ -395,6 +397,7 @@ export default function AdminAnimais() {
       setNewAnimalNome(""); setNewAnimalChip(""); setNewAnimalSex(1); setNewAnimalRaca("");
       setNewAnimalPorte(null); setNewAnimalAltura(""); setNewAnimalPeso(""); setNewAnimalEsterelizacao(null);
       setNewAnimalObservacoes(""); setNewAnimalDataUltimaVacina(""); setNewAnimalDataProximaVacina("");
+      setNewAnimalDataNascimento("");
       setNewAnimalImage(null); setNewAnimalImagePreview(null); setNewAnimalArquivos(null); setNewAnimalColonia(null);
       setCreateAnimalDialogOpen(false);
     } catch (e) { console.error(e); alert("Erro ao criar animal."); }
@@ -503,6 +506,10 @@ export default function AdminAnimais() {
                       <SelectField label="Esterilização" value={newAnimalEsterelizacao} placeholder="Opcional"
                         options={[{ label: "✓ Esterilizado", value: 1 }, { label: "✗ Não esterilizado", value: 2 }]}
                         open={createEsterelizacaoOpen} setOpen={setCreateEsterelizacaoOpen} onChange={v => setNewAnimalEsterelizacao(v)} />
+                      <div className="col-span-2">
+                        <FieldLabel>Data de Nascimento</FieldLabel>
+                        <Input type="date" value={newAnimalDataNascimento} onChange={e => setNewAnimalDataNascimento(e.target.value)} className={inputCls} />
+                      </div>
                       <div>
                         <FieldLabel>Altura (cm)</FieldLabel>
                         <Input type="number" placeholder="—" value={newAnimalAltura} onChange={e => setNewAnimalAltura(e.target.value)} className={inputCls} />
@@ -907,6 +914,14 @@ export default function AdminAnimais() {
                             {viewItem.colonia != null && (
                               <InfoChip icon={MapPin} label="Colónia" value={colonias.find(c => c.id === viewItem.colonia)?.nome ?? `#${viewItem.colonia}`} />
                             )}
+                            {viewItem.data_nascimento && (() => {
+                              const bd = new Date(viewItem.data_nascimento);
+                              const now = new Date();
+                              let age = now.getFullYear() - bd.getFullYear();
+                              const m = now.getMonth() - bd.getMonth();
+                              if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
+                              return <InfoChip icon={Calendar} label="Idade" value={`${age} ${age === 1 ? 'ano' : 'anos'} (${bd.toLocaleDateString("pt-PT")})`} />;
+                            })()}
                             {viewItem.porte != null && <InfoChip icon={Layers} label="Porte" value={porteLabel(viewItem.porte)} />}
                             {viewItem.altura != null && <InfoChip icon={Ruler} label="Altura" value={`${viewItem.altura} cm`} />}
                             {viewItem.peso != null && <InfoChip icon={Weight} label="Peso" value={`${viewItem.peso} kg`} />}
@@ -1152,6 +1167,11 @@ export default function AdminAnimais() {
                       <SelectField label="Esterilização" value={editItem.esterelizacao ?? null} placeholder="Selecionar"
                         options={[{ label: "✓ Esterilizado", value: 1 }, { label: "✗ Não esterilizado", value: 2 }]}
                         open={editEsterelizacaoOpen} setOpen={setEditEsterelizacaoOpen} onChange={v => setEditItem({ ...editItem, esterelizacao: v })} />
+                      <div className="col-span-2">
+                        <FieldLabel>Data de Nascimento</FieldLabel>
+                        <Input type="date" value={editItem.data_nascimento ? new Date(editItem.data_nascimento).toISOString().split('T')[0] : ""}
+                          onChange={e => setEditItem({ ...editItem, data_nascimento: e.target.value })} className={inputCls} />
+                      </div>
                       <div>
                         <FieldLabel>Altura (cm)</FieldLabel>
                         <Input type="number" value={editItem.altura || ""} onChange={e => setEditItem({ ...editItem, altura: e.target.value ? Number(e.target.value) : null })} className={inputCls} />

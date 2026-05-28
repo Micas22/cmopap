@@ -508,6 +508,7 @@ export default function Page() {
                         <span className="text-xs font-medium text-gray-400 bg-gray-50 group-hover:bg-orange-50 group-hover:text-orange-400 transition-colors px-2.5 py-1 rounded-full">
                           {pet.createdAt ? new Date(pet.createdAt).toLocaleDateString("pt-PT") : "Recente"}
                         </span>
+
                         <span className="text-xs font-bold text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 tracking-wide uppercase flex items-center gap-1">
                           Ver mais <ArrowRight size={10} />
                         </span>
@@ -731,6 +732,23 @@ export default function Page() {
 
               {/* Details */}
               <div className="p-6 space-y-3">
+                {/* Idade */}
+                {selectedAnimal.data_nascimento && (() => {
+                  const bd = new Date(selectedAnimal.data_nascimento);
+                  const now = new Date();
+                  let age = now.getFullYear() - bd.getFullYear();
+                  const m = now.getMonth() - bd.getMonth();
+                  if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
+                  return (
+                    <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
+                      <p className="text-xs text-orange-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <CalendarDays size={10} /> Idade
+                      </p>
+                      <p className="text-gray-800 font-semibold">{age} {age === 1 ? 'ano' : 'anos'} ({bd.toLocaleDateString("pt-PT")})</p>
+                    </div>
+                  );
+                })()}
+
                 {/* Raça */}
                 {selectedAnimal.raca && (
                   <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
