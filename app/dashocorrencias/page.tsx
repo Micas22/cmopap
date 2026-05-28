@@ -420,7 +420,7 @@ export default function DashOcorrencias() {
 
                       {/* map card */}
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative min-h-[240px]">
-                        <ReportMap onLocationSelect={() => { }} />
+                        <ReportMap morada={current.morada} />
                         <div className="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-sm text-xs text-gray-600 font-medium px-3 py-2 rounded-xl shadow-sm border border-gray-100 z-[1000] truncate flex items-center gap-1.5">
                           <MapPin className="w-3 h-3 text-orange-500 flex-shrink-0" />
                           {current.morada}

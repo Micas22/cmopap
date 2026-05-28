@@ -1,6 +1,6 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useState, useEffect } from "react";
@@ -68,26 +68,55 @@ function LocationMarker({ onLocationSelect, position, setPosition }: LocationMar
     },
   });
 
-  // Set crosshair cursor on the map container
+  // Set crosshair cursor on the map container if selecting
   useEffect(() => {
-    const container = map.getContainer();
-    container.style.cursor = "crosshair";
-    return () => {
-      container.style.cursor = "";
-    };
-  }, [map]);
+    if (onLocationSelect) {
+      const container = map.getContainer();
+      container.style.cursor = "crosshair";
+      return () => {
+        container.style.cursor = "";
+      };
+    }
+  }, [map, onLocationSelect]);
 
   return position === null ? null : (
     <Marker position={position} icon={orangeIcon} />
   );
 }
 
+function FlyController({ target }: { target: L.LatLng | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target) {
+      map.flyTo(target, 16, { animate: true, duration: 1.2 });
+    }
+  }, [target, map]);
+  return null;
+}
+
 export default function ReportMap({
   onLocationSelect,
+  morada,
 }: {
   onLocationSelect?: (lat: number, lng: number) => void;
+  morada?: string;
 }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
+
+  useEffect(() => {
+    if (morada && !onLocationSelect) {
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(morada)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.length > 0) {
+            setPosition(new L.LatLng(parseFloat(data[0].lat), parseFloat(data[0].lon)));
+          }
+        })
+        .catch(console.error);
+    } else if (!onLocationSelect && !morada) {
+      setPosition(null);
+    }
+  }, [morada, onLocationSelect]);
 
   return (
     <MapContainer
@@ -100,6 +129,7 @@ export default function ReportMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <FlyController target={position} />
       <LocationMarker
         onLocationSelect={onLocationSelect}
         position={position}
