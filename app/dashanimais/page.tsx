@@ -323,6 +323,7 @@ export default function AdminAnimais() {
     raca?: string; porte?: number; altura?: number; peso?: number;
     esterelizacao?: number; observacoes?: string; arquivos?: string;
     colonia?: number | null; data_ultima_vacina?: string; data_proxima_vacina?: string;
+    tipo?: string; acolhido?: boolean;
   };
   type Colonia = { id: number; nome: string; animalCount?: number };
 
@@ -573,6 +574,28 @@ export default function AdminAnimais() {
   const handleDeleteAnimal = async (id: number) => {
     await fetch("/api/admin/animals", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     setAnimals(p => p.filter(a => a.id !== id)); setDeleteConfirmId(null);
+  };
+
+  // Toggle acolhido flag quickly from the table
+  const handleToggleAcolhido = async (id: number, value: boolean) => {
+    // optimistic
+    setAnimals(p => p.map(a => a.id === id ? { ...a, acolhido: value } : a));
+    try {
+      const r = await fetch('/api/admin/animals/acolhido', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, acolhido: value }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        alert(`Erro: ${err.error || 'Falha ao atualizar'}`);
+        // revert
+        setAnimals(p => p.map(a => a.id === id ? { ...a, acolhido: !value } : a));
+      }
+    } catch (e) {
+      console.error(e);
+      setAnimals(p => p.map(a => a.id === id ? { ...a, acolhido: !value } : a));
+    }
   };
 
   /* ── create animal ── */
@@ -998,6 +1021,7 @@ export default function AdminAnimais() {
                           { key: "chip", label: "Chip" },
                           { key: "sex", label: "Sexo" },
                           { key: "colonia", label: "Colónia" },
+                          { key: "acolhido", label: "Acolhido", noSort: true },
                           { key: "vacina", label: "Vacina", noSort: true },
                         ].map(col => (
                           <TableHead key={col.key}
@@ -1046,6 +1070,17 @@ export default function AdminAnimais() {
                                   <MapPin className="w-3 h-3" />{colonias.find(c => c.id === a.colonia)?.nome ?? `#${a.colonia}`}
                                 </span>
                                 : <span className="text-gray-200 text-xs">—</span>}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div onClick={e => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!a.acolhido}
+                                  onClick={e => e.stopPropagation()}
+                                  onChange={e => handleToggleAcolhido(a.id, e.target.checked)}
+                                  className="w-4 h-4 rounded"
+                                />
+                              </div>
                             </TableCell>
                             <TableCell>
                               {daysLeft !== null ? (

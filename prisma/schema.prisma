@@ -36,6 +36,7 @@ model Animal {
   colonia             Int?
   data_nascimento     DateTime?         @map("data_nascimento")
   tipo String
+  acolhido Boolean
 }
 
 model Stocks {
