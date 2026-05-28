@@ -103,7 +103,7 @@ export default function Page() {
   const [animalsLoading, setAnimalsLoading] = useState(true);
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
   const [colonias, setColonias] = useState<any[]>([]);
-  const [stats, setStats] = useState({ residentes: 0, colonias: 0, esterilizados: 0, errantes: 0, acolhimento: 0 });
+  const [stats, setStats] = useState({ residentes: 0, colonias: 0, esterilizados: 0, vacinados: 0, acolhimento: 0 });
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Hero parallax & mouse
@@ -171,7 +171,7 @@ export default function Page() {
     ["Ativo1.png", "Residentes", stats.residentes],
     ["Ativo4.png", "Em Colónias", stats.colonias],
     ["Ativo5.png", "Esterilizados", stats.esterilizados],
-    ["Ativo6.png", "Errantes", stats.errantes],
+    ["Ativo6.png", "Vacinados", stats.vacinados],
     ["Ativo7.png", "Acolhimento", stats.acolhimento],
   ];
 

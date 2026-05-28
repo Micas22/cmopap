@@ -154,7 +154,7 @@ export default function AboutUs() {
               transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 leading-[1.1] tracking-tight mb-8"
             >
-              Uma Segunda Vida<br />Para Cada Animal
+              Cada Animal<br />Merece Um Recomeço
             </motion.h1>
 
             <motion.p
