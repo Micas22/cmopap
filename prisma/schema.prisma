@@ -35,6 +35,7 @@ model Animal {
   Aconselhamentos     Aconselhamentos[]
   colonia             Int?
   data_nascimento     DateTime?         @map("data_nascimento")
+  tipo String
 }
 
 model Stocks {

@@ -386,6 +386,9 @@ export default function AdminAnimais() {
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [newAnimalArquivos, setNewAnimalArquivos] = useState<File[] | null>(null);
   const [editArquivosFile, setEditArquivosFile] = useState<File[] | null>(null);
+  const [newAnimalTipo, setNewAnimalTipo] = useState("");
+  const [showTipoSuggestions, setShowTipoSuggestions] = useState(false);
+  const [editTipoSuggestions, setEditTipoSuggestions] = useState(false);
 
   const router = useRouter();
 
@@ -433,6 +436,11 @@ export default function AdminAnimais() {
   const porteLabel = (p?: number | null) => ({ 1: "Pequeno", 2: "Médio", 3: "Grande" }[p ?? 0] ?? "—");
   const sterilLabel = (e?: number | null) => e === 1 ? "Esterilizado" : e === 2 ? "Não esterilizado" : "—";
   const inputCls = "rounded-xl border-2 border-gray-100 focus:border-orange-300 focus:ring-0 transition-colors text-sm";
+  const getTipoSuggestions = () => {
+    const suggestions = new Set<string>(["canidio", "felino"]);
+    animals.forEach(a => { if (a.tipo?.trim()) suggestions.add(a.tipo.trim()); });
+    return Array.from(suggestions).sort();
+  };
 
   /* ── sort / filter ── */
   const handleSort = (key: string) => {
@@ -529,7 +537,7 @@ export default function AdminAnimais() {
         if (!["image", "deleteImage", "arquivos", "clearArquivos"].includes(k)) {
           const v = editItem[k];
           if (v !== null && v !== undefined && v !== "") fd.append(k, String(v));
-          else if (["raca", "observacoes", "porte", "altura", "peso", "esterelizacao", "colonia"].includes(k)) fd.append(k, "");
+          else if (["raca", "observacoes", "porte", "altura", "peso", "esterelizacao", "colonia", "tipo"].includes(k)) fd.append(k, "");
           else if (v != null) fd.append(k, String(v));
         }
       });
@@ -575,6 +583,7 @@ export default function AdminAnimais() {
       fd.append("nome", newAnimalNome); fd.append("chip", newAnimalChip); fd.append("sex", String(newAnimalSex));
       if (newAnimalImage) fd.append("image", newAnimalImage);
       if (newAnimalRaca) fd.append("raca", newAnimalRaca);
+      if (newAnimalTipo) fd.append("tipo", newAnimalTipo);
       if (newAnimalPorte !== null) fd.append("porte", String(newAnimalPorte));
       if (newAnimalAltura) fd.append("altura", newAnimalAltura);
       if (newAnimalPeso) fd.append("peso", newAnimalPeso);
@@ -591,7 +600,7 @@ export default function AdminAnimais() {
       setNewAnimalNome(""); setNewAnimalChip(""); setNewAnimalSex(1); setNewAnimalRaca("");
       setNewAnimalPorte(null); setNewAnimalAltura(""); setNewAnimalPeso(""); setNewAnimalEsterelizacao(null);
       setNewAnimalObservacoes(""); setNewAnimalDataUltimaVacina(""); setNewAnimalDataProximaVacina("");
-      setNewAnimalDataNascimento("");
+      setNewAnimalDataNascimento(""); setNewAnimalTipo("");
       setNewAnimalImage(null); setNewAnimalImagePreview(null); setNewAnimalArquivos(null); setNewAnimalColonia(null);
       setCreateAnimalDialogOpen(false);
     } catch (e) { console.error(e); alert("Erro ao criar animal."); }
@@ -699,9 +708,46 @@ export default function AdminAnimais() {
                         <FieldLabel>Raça</FieldLabel>
                         <Input placeholder="Opcional" value={newAnimalRaca} onChange={e => setNewAnimalRaca(e.target.value)} className={inputCls} />
                       </div>
-                      <SelectField label="Sexo" value={newAnimalSex} placeholder="Selecionar" required
-                        options={[{ label: "♂ Macho", value: 1 }, { label: "♀ Fêmea", value: 0 }]}
-                        open={createSexOpen} setOpen={setCreateSexOpen} onChange={v => setNewAnimalSex(v)} />
+                      <div>
+                        <FieldLabel>Tipo</FieldLabel>
+                        <div className="relative">
+                          <Input 
+                            placeholder="Ex: Canídio, Felino" 
+                            value={newAnimalTipo} 
+                            onChange={e => { setNewAnimalTipo(e.target.value); setShowTipoSuggestions(true); }}
+                            onFocus={() => setShowTipoSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowTipoSuggestions(false), 180)}
+                            className={inputCls} 
+                          />
+                          <AnimatePresence>
+                            {showTipoSuggestions && getTipoSuggestions().filter(t => t.toLowerCase().includes(newAnimalTipo.toLowerCase()) || !newAnimalTipo).length > 0 && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: -6 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0 }}
+                                className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden"
+                              >
+                                {getTipoSuggestions().filter(t => t.toLowerCase().includes(newAnimalTipo.toLowerCase()) || !newAnimalTipo).map(tipo => (
+                                  <button 
+                                    key={tipo} 
+                                    type="button" 
+                                    onClick={() => { setNewAnimalTipo(tipo); setShowTipoSuggestions(false); }}
+                                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 transition-colors"
+                                  >
+                                    <span className={newAnimalTipo === tipo ? "font-semibold text-orange-600" : "text-gray-700"}>{tipo}</span>
+                                    {newAnimalTipo === tipo && <Check className="w-4 h-4 text-orange-500" />}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <SelectField label="Sexo" value={newAnimalSex} placeholder="Selecionar" required
+                          options={[{ label: "♂ Macho", value: 1 }, { label: "♀ Fêmea", value: 0 }]}
+                          open={createSexOpen} setOpen={setCreateSexOpen} onChange={v => setNewAnimalSex(v)} />
+                      </div>
                     </div>
                   </ModalSection>
 
@@ -1430,9 +1476,46 @@ export default function AdminAnimais() {
                         <FieldLabel>Raça</FieldLabel>
                         <Input value={editItem.raca || ""} onChange={e => setEditItem({ ...editItem, raca: e.target.value })} className={inputCls} />
                       </div>
-                      <SelectField label="Sexo" value={editItem.sex} placeholder="Sexo" required
-                        options={[{ label: "♂ Macho", value: 1 }, { label: "♀ Fêmea", value: 0 }]}
-                        open={editSexOpen} setOpen={setEditSexOpen} onChange={v => setEditItem({ ...editItem, sex: v })} />
+                      <div>
+                        <FieldLabel>Tipo</FieldLabel>
+                        <div className="relative">
+                          <Input 
+                            value={editItem.tipo || ""} 
+                            onChange={e => { setEditItem({ ...editItem, tipo: e.target.value }); setEditTipoSuggestions(true); }}
+                            onFocus={() => setEditTipoSuggestions(true)}
+                            onBlur={() => setTimeout(() => setEditTipoSuggestions(false), 180)}
+                            className={inputCls}
+                            placeholder="Ex: Canídio, Felino"
+                          />
+                          <AnimatePresence>
+                            {editTipoSuggestions && getTipoSuggestions().filter(t => t.toLowerCase().includes((editItem.tipo || "").toLowerCase()) || !editItem.tipo).length > 0 && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: -6 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0 }}
+                                className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden"
+                              >
+                                {getTipoSuggestions().filter(t => t.toLowerCase().includes((editItem.tipo || "").toLowerCase()) || !editItem.tipo).map(tipo => (
+                                  <button 
+                                    key={tipo} 
+                                    type="button" 
+                                    onClick={() => { setEditItem({ ...editItem, tipo }); setEditTipoSuggestions(false); }}
+                                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-left hover:bg-orange-50 transition-colors"
+                                  >
+                                    <span className={editItem.tipo === tipo ? "font-semibold text-orange-600" : "text-gray-700"}>{tipo}</span>
+                                    {editItem.tipo === tipo && <Check className="w-4 h-4 text-orange-500" />}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <SelectField label="Sexo" value={editItem.sex} placeholder="Sexo" required
+                          options={[{ label: "♂ Macho", value: 1 }, { label: "♀ Fêmea", value: 0 }]}
+                          open={editSexOpen} setOpen={setEditSexOpen} onChange={v => setEditItem({ ...editItem, sex: v })} />
+                      </div>
                     </div>
                   </ModalSection>
 

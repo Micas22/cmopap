@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     const sex = Number(formData.get("sex"));
     const image = formData.get("image") as File | null;
     const raca = formData.get("raca") as string;
+    const tipo = formData.get("tipo") as string;
     const porte = formData.get("porte") ? Number(formData.get("porte")) : null;
     const altura = formData.get("altura") ? Number(formData.get("altura")) : null;
     const peso = formData.get("peso") ? Number(formData.get("peso")) : null;
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
         chip,
         sex,
         raca,
+        tipo: tipo || "",
         porte,
         altura,
         peso,
@@ -133,6 +135,7 @@ export async function PUT(request: Request) {
     const sex = Number(formData.get("sex"));
     const image = formData.get("image") as File | null;
     const raca = formData.get("raca") as string;
+    const tipo = formData.get("tipo") as string;
     const porteRaw = formData.get("porte") as string | null;
     const alturaRaw = formData.get("altura") as string | null;
     const pesoRaw = formData.get("peso") as string | null;
@@ -160,6 +163,7 @@ export async function PUT(request: Request) {
     if (chip) data.chip = chip;
     if (!isNaN(sex)) data.sex = sex;
     if (raca) data.raca = raca;
+    if (tipo !== null && tipo !== undefined) data.tipo = tipo;
     data.porte = Number(porteRaw);
     data.altura = Number(alturaRaw);
     data.peso = Number(pesoRaw);
