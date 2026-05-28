@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const [residentes, colonias, esterilizados, vacinados] = await Promise.all([
+    const [residentes, colonias, esterilizados, vacinados, acolhimento] = await Promise.all([
       // All animals in the shelter
       prisma.animal.count(),
       // Animals assigned to a colony
@@ -12,6 +12,8 @@ export async function GET() {
       prisma.animal.count({ where: { esterelizacao: { not: null, gt: 0 } } }),
       // Vaccinated animals (data_ultima_vacina is not null)
       prisma.animal.count({ where: { data_ultima_vacina: { not: null } } }),
+      // Acolhimento: animals where acolhido === true
+      prisma.animal.count({ where: { acolhido: true } }),
     ]);
 
     return NextResponse.json({
@@ -19,7 +21,7 @@ export async function GET() {
       colonias,
       esterilizados,
       vacinados,
-      acolhimento: 0,
+      acolhimento,
     });
   } catch (err) {
     console.error("[stats] error:", err);
