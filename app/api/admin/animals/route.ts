@@ -95,6 +95,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const acolhido = formData.get("acolhido") === "true";
+
     const newAnimal = await prisma.animal.create({
       data: {
         nome,
@@ -106,6 +108,7 @@ export async function POST(request: Request) {
         altura,
         peso,
         esterelizacao,
+        acolhido,
         ...(imagePath ? { image: imagePath } : {}),
         ...(observacoes ? { observacoes } : {}),
         ...(data_ultima_vacina ? { data_ultima_vacina: new Date(data_ultima_vacina) } : {}),
